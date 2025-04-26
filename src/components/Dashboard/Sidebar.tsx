@@ -223,10 +223,12 @@ const Sidebar = ({
                 })}
 
                 {/* Add Account */}
-                <div className="flex justify-center">
+                <div className="flex justify-center -mx-4">
                     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="outline" className="bg-[#475598] text-white">Add Account</Button>
+                            <div className="flex -ml-8">
+                                <Button variant="outline" className="flex justify-center w-[100%] text-left bg-[#475598] text-white">Add Account</Button>
+                            </div>
                         </DialogTrigger>
 
                         <DialogContent className="sm:max-w-md">
