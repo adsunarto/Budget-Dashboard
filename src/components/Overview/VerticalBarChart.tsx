@@ -57,32 +57,25 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
         data: rawData,
         backgroundColor: (context) => {
           const chart = context.chart;
-          const {ctx, chartArea} = chart;
+          const { ctx, chartArea } = chart;
           if (!chartArea) return null; // This is for initial animation
-          
+  
           const value = rawData[context.dataIndex];
           const category = categories[context.dataIndex];
-          
-          // Create gradient
+  
+          // Create gradients
           const redGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           redGradient.addColorStop(0, '#FF4043');
           redGradient.addColorStop(1, '#FF4080');
-          
+  
           const greenGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           greenGradient.addColorStop(0, '#32FF65');
           greenGradient.addColorStop(1, '#81FFC8');
-
+  
           const orangeGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           orangeGradient.addColorStop(0, '#FF8C00');
           orangeGradient.addColorStop(1, '#FFEC81');
-
-          if (["Paycheck", "Investment"].includes(category)) {
-            if (value < 90) return redGradient;   // now using gradient for red cases
-            if (value < 100) return orangeGradient;  // orange
-            return greenGradient;                   // green
-        data: rawData, // Your percentage of the budget spent
-        backgroundColor: rawData.map((value, index) => {
-          const category = categories[index];
+  
           if (["Income", "Investment"].includes(category)) {
             if (value < 90) return '#EF4444';   // red
             if (value < 100) return '#FACC15';  // orange
@@ -90,14 +83,14 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
           } else {
             if (value < 90) return greenGradient;   // green
             if (value <= 100) return orangeGradient; // orange
-            return redGradient;                   // now using gradient for red cases
+            return redGradient;                   // red gradient
           }
         },
         borderRadius: 4,
         borderSkipped: false,
       },
     ],
-};
+  };
 
   const options = {
     responsive: true,
