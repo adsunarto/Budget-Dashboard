@@ -40,6 +40,10 @@ const Overview = ({ transactions, assets }) => {
         return month - 1 === currentMonth && year === currentYear;
     });
 
+    const transactionsMinusPaycheck = transactions.filter((tx) => {
+        return tx.tag !== "Income";
+    });
+
     const spendingByCategory: Record<string, number> = {};
 
     transactionsThisMonth.forEach((tx) => {
@@ -47,6 +51,10 @@ const Overview = ({ transactions, assets }) => {
             spendingByCategory[tx.tag] = 0;
         }
         spendingByCategory[tx.tag] += tx.amount;
+    });
+
+    const transactionsThisMonthMinusPaycheck = transactionsThisMonth.filter((tx) => {
+        return tx.tag !== "Income";
     });
 
     function calculateNetSavings() {
@@ -59,7 +67,7 @@ const Overview = ({ transactions, assets }) => {
 
     const [netSavings] = useState(calculateNetSavings);
     const defaultBudgets: Budget[] = Array.from(
-        transactions.reduce((map, tx) => {
+        transactionsThisMonth.reduce((map, tx) => {
             const current = map.get(tx.tag) || { budgeted: 0, amountSpent: 0 };
             current.amountSpent += tx.amount;
             map.set(tx.tag, current);
@@ -95,16 +103,28 @@ const Overview = ({ transactions, assets }) => {
     }
 
     function calculateCatsOverBudget() {
-        let overBudget = 0;
-        budgets.forEach(budget => {
-            if (-1 * budget.amountSpent > budget.budgeted) {
-                overBudget += 1;
+        // Calculate spending by category from current month's transactions
+        const spendingByCategory: Record<string, number> = {};
+        transactionsThisMonth.forEach((tx) => {
+            if (!spendingByCategory[tx.tag]) {
+                spendingByCategory[tx.tag] = 0;
             }
-        })
+            spendingByCategory[tx.tag] += tx.amount;
+        });
+
+        let overBudget = 0;
+        budgets
+            .filter(budget => budget.category !== "Income")
+            .forEach(budget => {
+                const spent = spendingByCategory[budget.category] || 0;
+                if (-1 * spent > budget.budgeted) {
+                    overBudget += 1;
+                }
+            });
         return overBudget;
     }
 
-    const [catsOverBudget, setCatsOverBudget] = useState(calculateCatsOverBudget); // useState(Math.floor(Math.random() * 5));
+    const [catsOverBudget, setCatsOverBudget] = useState(calculateCatsOverBudget);
     const [budgeteerScore, setBudgeteerScore] = useState(calculateBudgeteerScore());
     const [AIexplanation, setAIexplanation] = useState({ "title": "", "explanation": "" });
     const [showAIexplain, setShowAIexplain] = useState(false);
@@ -177,7 +197,9 @@ const Overview = ({ transactions, assets }) => {
             "color": getnetSavingsColor(netSavings),
             "additionalDetail": "",
             "promptContext": [
-                ""
+                "Tell me how much I'm saving or spending this month.",
+                "Do not suggest reducing spending on necessities, such as debt or housing.",
+                "The income category is not related to spending. Do not suggest reducing spending on income."
             ]
         },
         {
@@ -189,7 +211,7 @@ const Overview = ({ transactions, assets }) => {
             "color": getOverBudgetColor(catsOverBudget),
             "additionalDetail": "",
             "promptContext": [
-                ""
+                "Tell me which categories are over budget and why."
             ]
         },
         {
@@ -201,7 +223,7 @@ const Overview = ({ transactions, assets }) => {
             "color": getBudgeteerScoreColor(budgeteerScore),
             "additionalDetail": " " + getBudgeteerScoreCategory(budgeteerScore),
             "promptContext": [
-                ""
+                "Tell me what my Budgeteer Score is and why."
             ]
         }
     ]
@@ -210,7 +232,7 @@ const Overview = ({ transactions, assets }) => {
         "netSavings": netSavings,
         "categoriesOverBudget": catsOverBudget,
         "budgeteerScore": budgeteerScore,
-        "transactions": transactions,
+        // "transactions": transactions,
         "budgets": budgets,
         "assets": assets
     }
@@ -220,17 +242,18 @@ const Overview = ({ transactions, assets }) => {
         console.log(`Generating response for ${topic}`)
         const promptParts = [
             "You are an assistant that helps with budgeting. Your goal is to provide helpful, clear explanations.",
-            "Limit your response to a short paragraph using only the information provided.",
+            "Limit your response to a short paragraph of a few sentences (with no markdown and no emojis), using only the information provided.",
             "Be direct with your response, don't say things like 'Based on x' or 'According to'.",
             "Act as if everyone knows what the value is, don't say 'It looks like' or 'I'm reporting a value of x'.",
-            "If the value explained has a negative association, explain how I might be able to improve the score.",
-            "The lowest Budgeteer Score is 300 and the highest Budgeteer Score is 850.",
-            "A negative net earnings correlates to a lower Budgeteer Score",
-            "More categories over budget correlates to a lower Budgeteer Score",
-            "Regarding budgets and spending, a negative spend means the user spent that amount. If the absolute value of the amount spent is less than the budget, the user is not overbudget. If the absolute value of the amount spent is greater than the budget, the user is overbudget.",
+            "Do not thank me. Do not ask me if I have any other questions. Do not use numbers or bullet points to list things.",
+            "If there are easy improvements, explain how I might be able to improve the score.",
+            // "The lowest Budgeteer Score is 300 and the highest Budgeteer Score is 850.",
+            // "A negative net earnings correlates to a lower Budgeteer Score",
+            // "More categories over budget correlates to a lower Budgeteer Score",
+            // "Regarding budgets and spending, a negative spend means the user spent that amount. If the absolute value of the amount spent is less than the budget, the user is not overbudget. If the absolute value of the amount spent is greater than the budget, the user is overbudget.",
             `Explain the reasoning behind my score for ${topic} given the following data: ${JSON.stringify(userData)}.`,
-            "If the category to explain is affected by any transactions or budgets, enlighten the user to the data.",
-            "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets."
+            // "If the category to explain is affected by any transactions or budgets, enlighten the user to the data.",
+            // "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets."
         ];
         promptParts.push.apply(promptParts, context);
         try {
@@ -330,10 +353,10 @@ const Overview = ({ transactions, assets }) => {
 
             <div className="flex">
                 {/* Line Graph Component */}
-                <MoneyTrends transactions={transactions} />
+                <MoneyTrends transactions={transactionsMinusPaycheck} />
 
                 {/* Bar Graph Component */}
-                <VerticalBarChart transactions={transactionsThisMonth} budgets={budgets} />
+                <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
             </div>
         </>
     );

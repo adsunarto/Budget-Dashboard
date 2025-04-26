@@ -29,15 +29,23 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
     spendingMap[tx.tag] += Math.abs(tx.amount);
   });
 
+  // Add any missing categories from transactions to budgets
+  const updatedBudgets = [...budgets];
+  Object.keys(spendingMap).forEach(category => {
+    if (!updatedBudgets.some(b => b.category === category)) {
+      updatedBudgets.push({ category, budgeted: 1000 }); // Default budget of 1000 for new categories
+    }
+  });
+
   // Combine category list from either budgets or spendingMap
   const categories = Array.from(new Set([
-    ...budgets.map((b) => b.category),
+    ...updatedBudgets.map((b) => b.category),
     ...Object.keys(spendingMap),
-  ]));
+  ])).filter(category => category !== "Income");
 
   const rawData = categories.map((category) => {
     const spent = spendingMap[category] || 0;
-    const budgeted = budgets.find((b) => b.category === category)?.budgeted ?? 1000;
+    const budgeted = updatedBudgets.find((b) => b.category === category)?.budgeted ?? 1000;
     return 100 * spent / (budgeted === 0 ? 1 : budgeted); // Avoid divide-by-zero
   });
 
@@ -72,6 +80,13 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
             if (value < 90) return redGradient;   // now using gradient for red cases
             if (value < 100) return orangeGradient;  // orange
             return greenGradient;                   // green
+        data: rawData, // Your percentage of the budget spent
+        backgroundColor: rawData.map((value, index) => {
+          const category = categories[index];
+          if (["Income", "Investment"].includes(category)) {
+            if (value < 90) return '#EF4444';   // red
+            if (value < 100) return '#FACC15';  // orange
+            return '#34D399';                   // green
           } else {
             if (value < 90) return greenGradient;   // green
             if (value <= 100) return orangeGradient; // orange
