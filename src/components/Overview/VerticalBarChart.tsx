@@ -59,23 +59,23 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
           const chart = context.chart;
           const { ctx, chartArea } = chart;
           if (!chartArea) return null; // This is for initial animation
-  
+
           const value = rawData[context.dataIndex];
           const category = categories[context.dataIndex];
-  
+
           // Create gradients
           const redGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           redGradient.addColorStop(0, '#FF4043');
           redGradient.addColorStop(1, '#FF4080');
-  
+
           const greenGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           greenGradient.addColorStop(0, '#32FF65');
           greenGradient.addColorStop(1, '#81FFC8');
-  
+
           const orangeGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           orangeGradient.addColorStop(0, '#FF8C00');
           orangeGradient.addColorStop(1, '#FFEC81');
-  
+
           if (["Income", "Investment"].includes(category)) {
             if (value < 90) return '#EF4444';   // red
             if (value < 100) return '#FACC15';  // orange
