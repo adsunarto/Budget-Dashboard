@@ -33,7 +33,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
   const categories = Array.from(new Set([
     ...budgets.map((b) => b.category),
     ...Object.keys(spendingMap),
-  ]));
+  ])).filter(category => category !== "Paycheck");
 
   const rawData = categories.map((category) => {
     const spent = spendingMap[category] || 0;

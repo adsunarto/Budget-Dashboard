@@ -47,6 +47,10 @@ const Overview = ({ transactions, assets }) => {
         spendingByCategory[tx.tag] += tx.amount;
     });
 
+    const transactionsThisMonthMinusPaycheck = transactionsThisMonth.filter((tx) => {
+        return tx.tag !== "Paycheck";
+    });
+
     function calculateNetSavings() {
         let total = 0
         transactionsThisMonth.forEach(tx => {
@@ -331,7 +335,7 @@ const Overview = ({ transactions, assets }) => {
                 <MoneyTrends transactions={transactions} />
 
                 {/* Bar Graph Component */}
-                <VerticalBarChart transactions={transactionsThisMonth} budgets={budgets} />
+                <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
             </div>
         </>
     );
