@@ -46,24 +46,43 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
     datasets: [
       {
         label: 'Spent (%)',
-        data: rawData, // Your percentage of the budget spent
-        backgroundColor: rawData.map((value, index) => {
-          const category = categories[index];
+        data: rawData,
+        backgroundColor: (context) => {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          if (!chartArea) return null; // This is for initial animation
+          
+          const value = rawData[context.dataIndex];
+          const category = categories[context.dataIndex];
+          
+          // Create gradient
+          const redGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          redGradient.addColorStop(0, '#FF4043');
+          redGradient.addColorStop(1, '#FF4080');
+          
+          const greenGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          greenGradient.addColorStop(0, '#32FF65');
+          greenGradient.addColorStop(1, '#81FFC8');
+
+          const orangeGradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          orangeGradient.addColorStop(0, '#FF8C00');
+          orangeGradient.addColorStop(1, '#FFEC81');
+
           if (["Paycheck", "Investment"].includes(category)) {
-            if (value < 90) return '#EF4444';   // red
-            if (value < 100) return '#FACC15';  // orange
-            return '#34D399';                   // green
+            if (value < 90) return redGradient;   // now using gradient for red cases
+            if (value < 100) return orangeGradient;  // orange
+            return greenGradient;                   // green
           } else {
-            if (value < 90) return '#34D399';   // red
-            if (value <= 100) return '#FACC15';  // orange
-            return '#EF4444';                   // green
+            if (value < 90) return greenGradient;   // green
+            if (value <= 100) return orangeGradient; // orange
+            return redGradient;                   // now using gradient for red cases
           }
-        }),
+        },
         borderRadius: 4,
         borderSkipped: false,
       },
     ],
-  };
+};
 
   const options = {
     responsive: true,
@@ -74,7 +93,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
         text: "Budget vs Spent by Category", // Title text
         font: {
           size: 18, // Set the title font size
-          family: "'Arial', sans-serif", // Font family
+          family: "'Poppins', sans-serif", // Font family
           weight: 'bold', // Font weight
         },
       },
@@ -101,6 +120,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
               font: {
                 size: 14,
                 weight: 'bold',
+                family: "'Poppins', sans-serif" // Font family
               },
               color: 'black', // Line label color
             },

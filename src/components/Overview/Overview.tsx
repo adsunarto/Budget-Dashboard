@@ -6,6 +6,8 @@ import AIExplanation from "@/components/Overview/AIExplanation";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
 import MoneyTrends from "./MoneyTrends";
 
+import LineChart from "./LineChart";
+
 type Transaction = {
     id: number;
     date: string;

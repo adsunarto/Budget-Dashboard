@@ -58,8 +58,8 @@ const MoneyTrends = ({ transactions }: Props) => {
                 label: category,
                 data: dataPoints,
                 fill: false,
-                borderColor: getRandomColor(), // Random color for each category line
-                tension: 0.1,
+                borderColor: getRandomShades(), // Random color for each category line
+                tension: 0.4,
             });
 
             // Add months to the label if not already added
@@ -80,54 +80,115 @@ const MoneyTrends = ({ transactions }: Props) => {
         <div className="flex h-[50vh]">  {/* Full height container with flexbox */}
             <div className="flex flex-col justify-end h-full w-[50vw] overflow-hidden">
 
-                <Line
-                    data={chartData}
-                    options={{
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: "Spending Trends by Category", // Title text
-                                font: {
-                                    size: 18, // Set the title font size
-                                    family: "'Arial', sans-serif", // Font family
-                                    weight: 'bold', // Font weight
-                                },
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: (tooltipItem) => {
-                                        return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
-                                    },
-                                },
-                            },
+            <Line
+                data={chartData}
+                options={{
+                    responsive: true,
+                    elements: {
+                    },
+                    plugins: {
+                    title: {
+                        display: true,
+                        text: "Spending Trends by Category",
+                        font: {
+                        size: 18,
+                        family: "'Poppins', sans-serif",
+                        weight: '600',
                         },
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Month-Year',
-                                },
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Change in Amount ($)',
-                                },
-                                beginAtZero: true,
-                            },
+                        padding: {
+                        bottom: 20,
                         },
-                    }}
+                    },
+                    legend: {
+                        labels: {
+                        font: {
+                            family: "'Poppins', sans-serif",
+                            size: 12,
+                            weight: '500',
+                        },
+                        padding: 20,
+                        usePointStyle: true, // Nicer legend item markers
+                        },
+                    },
+                    tooltip: {
+                        callbacks: {
+                        label: (tooltipItem) => {
+                            return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
+                        },
+                        },
+                        titleFont: {
+                        family: "'Poppins', sans-serif",
+                        },
+                        bodyFont: {
+                        family: "'Poppins', sans-serif",
+                        },
+                    },
+                    },
+                    scales: {
+                    x: {
+                        grid: {
+                        display: false, // Remove vertical grid lines
+                        drawBorder: false, // Optional: remove axis line
+                        },
+                        title: {
+                        display: true,
+                        text: 'Month-Year',
+                        font: {
+                            family: "'Poppins', sans-serif",
+                            weight: '500',
+                        },
+                        },
+                        ticks: {
+                        font: {
+                            family: "'Poppins', sans-serif",
+                        },
+                        },
+                    },
+                    y: {
+                        grid: {
+                        display: false, // Remove horizontal grid lines
+                        drawBorder: false, // Optional: remove axis line
+                        },
+                        title: {
+                        display: true,
+                        text: 'Change in Amount ($)',
+                        font: {
+                            family: "'Poppins', sans-serif",
+                            weight: '500',
+                        },
+                        },
+                        ticks: {
+                        font: {
+                            family: "'Poppins', sans-serif",
+                        },
+                        },
+                        beginAtZero: true,
+                    },
+                    },
+                }}
                 />
             </div>
         </div>
     );
 };
 
-// Helper function to generate random colors for each line
-const getRandomColor = () => {
-    const randomColor = () => Math.floor(Math.random() * 256);
-    return `rgb(${randomColor()}, ${randomColor()}, ${randomColor()})`;
+// Helper function to generate random green shades
+const getRandomShades = () => {
+
+    const randomShades = [
+        '#1b5af8', // Darker blue
+        '#61bdff',  // Lighter blue
+        '#abe394',
+        '#136b38'
+      ];
+    
+    return randomShades[Math.floor(Math.random() * randomShades.length)];
+    
+    // Alternative with opacity for softer look:
+    // return `rgba(${red}, ${green}, ${blue}, 0.8)`;
 };
 
 export default MoneyTrends;
+
+
+
