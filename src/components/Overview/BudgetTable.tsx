@@ -31,7 +31,7 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
 
   // Merge spending with budget values
   const categories = Object.entries(spendingByCategory)
-    .filter(([category]) => category !== 'Paycheck') // 👈 filter OUT "Paycheck" first
+    .filter(([category]) => category !== 'Income') // 👈 filter OUT "Paycheck" first
     .map(([category, spent], index) => {
       const budgetMatch = budgets.find((b) => b.category === category);
       return {

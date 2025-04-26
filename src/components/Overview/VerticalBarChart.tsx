@@ -41,7 +41,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
   const categories = Array.from(new Set([
     ...updatedBudgets.map((b) => b.category),
     ...Object.keys(spendingMap),
-  ])).filter(category => category !== "Paycheck");
+  ])).filter(category => category !== "Income");
 
   const rawData = categories.map((category) => {
     const spent = spendingMap[category] || 0;
@@ -57,7 +57,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
         data: rawData, // Your percentage of the budget spent
         backgroundColor: rawData.map((value, index) => {
           const category = categories[index];
-          if (["Paycheck", "Investment"].includes(category)) {
+          if (["Income", "Investment"].includes(category)) {
             if (value < 90) return '#EF4444';   // red
             if (value < 100) return '#FACC15';  // orange
             return '#34D399';                   // green

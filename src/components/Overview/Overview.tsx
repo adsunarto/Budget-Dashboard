@@ -38,6 +38,10 @@ const Overview = ({ transactions, assets }) => {
         return month - 1 === currentMonth && year === currentYear;
     });
 
+    const transactionsMinusPaycheck = transactions.filter((tx) => {
+        return tx.tag !== "Income";
+    });
+
     const spendingByCategory: Record<string, number> = {};
 
     transactionsThisMonth.forEach((tx) => {
@@ -48,7 +52,7 @@ const Overview = ({ transactions, assets }) => {
     });
 
     const transactionsThisMonthMinusPaycheck = transactionsThisMonth.filter((tx) => {
-        return tx.tag !== "Paycheck";
+        return tx.tag !== "Income";
     });
 
     function calculateNetSavings() {
@@ -108,7 +112,7 @@ const Overview = ({ transactions, assets }) => {
 
         let overBudget = 0;
         budgets
-            .filter(budget => budget.category !== "Paycheck")
+            .filter(budget => budget.category !== "Income")
             .forEach(budget => {
                 const spent = spendingByCategory[budget.category] || 0;
                 if (-1 * spent > budget.budgeted) {
@@ -347,7 +351,7 @@ const Overview = ({ transactions, assets }) => {
 
             <div className="flex">
                 {/* Line Graph Component */}
-                <MoneyTrends transactions={transactions} />
+                <MoneyTrends transactions={transactionsMinusPaycheck} />
 
                 {/* Bar Graph Component */}
                 <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
