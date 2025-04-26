@@ -143,7 +143,7 @@ const Sidebar = ({
         <div className="w-64 bg-[#3F466E] border-r p-4 space-y-6 h-screen overflow-y-auto overflow-x-hidden">
             <div className="w-64 bg-[#3F466E] border-r p-4 space-y-6 sidebar">
                 <h1 style={{ fontFamily: 'lobster' }} className="text-white">Budgeteer</h1>
-                <div className="h-px bg-gray-300 w-full" />
+                <div className="h-px bg-[#475598] w-full -mx-4" />
                 {/* Sidebar Tabs */}
                 <div className="space-y-2 pt-4">
                     {["Overview", "Activity", "Plan", "Compare"].map((tab) => {
@@ -153,7 +153,7 @@ const Sidebar = ({
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`w-full text-left px-4 py-2 rounded-md transition-colors duration-200 ${isActive ? "bg-[#475598] font-semibold text-white" : "hover:bg-[#3F466E] text-white"}`}
+                                className={`w-full text-left px-4 py-2 rounded-md transition-colors duration-200 ${isActive ? "bg-[#475598] font-semibold text-white" : "hover:bg-[#475598]/50 text-white/90"} -mx-4`}
                                 aria-current={isActive ? "page" : undefined}
                             >
                                 {tab}
@@ -170,7 +170,7 @@ const Sidebar = ({
                         <div key={key} className="pt-2">
                             <button
                                 onClick={() => setShowSections((prev) => ({ ...prev, [key]: !isOpen }))}
-                                className="w-full flex items-center justify-between text-left text-sm font-medium text-white hover:text-white transition"
+                                className="w-full flex items-center justify-between text-left text-sm font-medium text-white/90 hover:text-white transition"
                                 aria-expanded={isOpen}
                             >
                                 <div className="flex items-center gap-2">
