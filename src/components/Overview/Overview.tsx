@@ -4,6 +4,7 @@ import BudgetTable from "@/components/Overview/BudgetTable";
 import VerticalBarChart from "@/components/Overview/VerticalBarChart";
 import AIExplanation from "@/components/Overview/AIExplanation";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
+import MoneyTrends from "./MoneyTrends";
 
 type Transaction = {
     id: number;
@@ -28,15 +29,33 @@ type props = {
 };
 
 const Overview = ({ transactions, assets }) => {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth(); // 0 = January, 11 = December
+    const currentYear = currentDate.getFullYear();
+
+    const transactionsThisMonth = transactions.filter((tx) => {
+        const [month, day, year] = tx.date.split("/").map(Number);
+        return month - 1 === currentMonth && year === currentYear;
+    });
+
+    const spendingByCategory: Record<string, number> = {};
+
+    transactionsThisMonth.forEach((tx) => {
+        if (!spendingByCategory[tx.tag]) {
+            spendingByCategory[tx.tag] = 0;
+        }
+        spendingByCategory[tx.tag] += tx.amount;
+    });
+
     function calculateNetSavings() {
         let total = 0
-        transactions.forEach(tx => {
+        transactionsThisMonth.forEach(tx => {
             total += tx.amount;
         });
         return parseFloat(total.toFixed(2));
     }
 
-    const [netSavings] = useState(calculateNetSavings); // useState(parseFloat((Math.random() * 2000 - 1000).toFixed(2)));
+    const [netSavings] = useState(calculateNetSavings);
     const defaultBudgets: Budget[] = Array.from(
         transactions.reduce((map, tx) => {
             const current = map.get(tx.tag) || { budgeted: 0, amountSpent: 0 };
@@ -305,10 +324,15 @@ const Overview = ({ transactions, assets }) => {
             )}
 
             {/* Budget Table Component */}
-            <BudgetTable transactions={transactions} budgets={budgets} setBudgets={setBudgets} updateCard={calculateCatsOverBudget} updateScore={calculateBudgeteerScore} />
+            <BudgetTable transactions={transactionsThisMonth} budgets={budgets} setBudgets={setBudgets} updateCard={calculateCatsOverBudget} updateScore={calculateBudgeteerScore} />
 
-            {/* Bar Graph Component */}
-            <VerticalBarChart transactions={transactions} budgets={budgets} />
+            <div className="flex">
+                {/* Line Graph Component */}
+                <MoneyTrends transactions={transactions} />
+
+                {/* Bar Graph Component */}
+                <VerticalBarChart transactions={transactionsThisMonth} budgets={budgets} />
+            </div>
         </>
     );
 };

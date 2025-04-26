@@ -120,8 +120,8 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
   };
 
   return (
-    <div className="flex justify-center h-[50vh]">  {/* Full height container with flexbox */}
-      <div className="flex flex-col justify-end h-full w-[50vw] overflow-hidden">
+    <div className="flex h-[50vh]">  {/* Full height container with flexbox */}
+      <div className="flex flex-col justify-end h-full w-[25vw] overflow-hidden">
         <Bar data={data} options={options} />
       </div>
     </div>

@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
+import React, { useState, useEffect } from "react";
 
 type Transaction = {
   id: number;
@@ -8,24 +7,23 @@ type Transaction = {
   name: string;
   amount: number;
 };
+
 type Props = {
   transactions: Transaction[];
 };
 
-const TransactionTable = ({ transactions: initialTransactions }: Props) => {
-  const [transactions, setTransactions] = useState<Transaction[]>(
-    () => getFromLocalStorage("transactions", initialTransactions)
-  );
+const TransactionTable = ({ transactions }: Props) => {
+  const [localTransactions, setLocalTransactions] = useState<Transaction[]>(transactions);
 
   useEffect(() => {
-    setToLocalStorage("transactions", transactions);
-  }, [transactions]);
+    setLocalTransactions(transactions);
+  }, [transactions]); // Re-run effect when transactions prop changes
 
   const handleTagChange = (id: number, newTag: string) => {
-    const updated = transactions.map((tx) =>
+    const updated = localTransactions.map((tx) =>
       tx.id === id ? { ...tx, tag: newTag } : tx
     );
-    setTransactions(updated);
+    setLocalTransactions(updated);
   };
 
   return (
@@ -40,7 +38,7 @@ const TransactionTable = ({ transactions: initialTransactions }: Props) => {
           </tr>
         </thead>
         <tbody>
-          {transactions.map((tx) => (
+          {localTransactions.map((tx) => (
             <tr key={tx.id} className="border-t hover:bg-gray-50">
               <td className="p-3 text-gray-800">{tx.date}</td>
               <td className="p-3 text-gray-800">{tx.name}</td>
