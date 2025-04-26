@@ -212,7 +212,7 @@ const Overview = ({ transactions, assets }) => {
         "netSavings": netSavings,
         "categoriesOverBudget": catsOverBudget,
         "budgeteerScore": budgeteerScore,
-        "transactions": transactions,
+        // "transactions": transactions,
         "budgets": budgets,
         "assets": assets
     }
@@ -222,17 +222,20 @@ const Overview = ({ transactions, assets }) => {
         console.log(`Generating response for ${topic}`)
         const promptParts = [
             "You are an assistant that helps with budgeting. Your goal is to provide helpful, clear explanations.",
-            "Limit your response to a short paragraph using only the information provided.",
+            "Limit your response to a very short paragraph (no markdown, no emojis) using only the information provided.",
             "Be direct with your response, don't say things like 'Based on x' or 'According to'.",
             "Act as if everyone knows what the value is, don't say 'It looks like' or 'I'm reporting a value of x'.",
+            "Do not thank me.",
+            "Do not ask me if I have any other questions.",
+            "Do not list things as they do not look good in a paragraph without formatting.",
             "If the value explained has a negative association, explain how I might be able to improve the score.",
-            "The lowest Budgeteer Score is 300 and the highest Budgeteer Score is 850.",
-            "A negative net earnings correlates to a lower Budgeteer Score",
-            "More categories over budget correlates to a lower Budgeteer Score",
-            "Regarding budgets and spending, a negative spend means the user spent that amount. If the absolute value of the amount spent is less than the budget, the user is not overbudget. If the absolute value of the amount spent is greater than the budget, the user is overbudget.",
+            // "The lowest Budgeteer Score is 300 and the highest Budgeteer Score is 850.",
+            // "A negative net earnings correlates to a lower Budgeteer Score",
+            // "More categories over budget correlates to a lower Budgeteer Score",
+            // "Regarding budgets and spending, a negative spend means the user spent that amount. If the absolute value of the amount spent is less than the budget, the user is not overbudget. If the absolute value of the amount spent is greater than the budget, the user is overbudget.",
             `Explain the reasoning behind my score for ${topic} given the following data: ${JSON.stringify(userData)}.`,
-            "If the category to explain is affected by any transactions or budgets, enlighten the user to the data.",
-            "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets."
+            // "If the category to explain is affected by any transactions or budgets, enlighten the user to the data.",
+            // "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets."
         ];
         promptParts.push.apply(promptParts, context);
         try {
