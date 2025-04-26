@@ -1,0 +1,15 @@
+{
+    "accounts": [
+        { "type": "Checking", "balance": 8749.91 },
+        { "type": "Savings", "balance": 7500.0 },
+        { "type": "Credit", "balance": -375.0 }
+    ],
+    "loans": [
+        { "type": "Student Loan", "balance": -15072.69 },
+        { "type": "Toyota Loan", "balance": -10505.01 }
+    ],
+    "investments": [
+        { "type": "401k", "balance": 19329.00 },
+        { "type": "IRA", "balance": 12429.00 }
+    ]
+}

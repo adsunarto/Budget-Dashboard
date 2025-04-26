@@ -1,0 +1,70 @@
+import { useState, useEffect } from "react";
+import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
+
+type Transaction = {
+  id: number;
+  date: string;
+  tag: string;
+  name: string;
+  amount: number;
+};
+type Props = {
+  transactions: Transaction[];
+};
+
+const TransactionTable = ({ transactions: initialTransactions }: Props) => {
+  const [transactions, setTransactions] = useState<Transaction[]>(
+    () => getFromLocalStorage("transactions", initialTransactions)
+  );
+
+  useEffect(() => {
+    setToLocalStorage("transactions", transactions);
+  }, [transactions]);
+
+  const handleTagChange = (id: number, newTag: string) => {
+    const updated = transactions.map((tx) =>
+      tx.id === id ? { ...tx, tag: newTag } : tx
+    );
+    setTransactions(updated);
+  };
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="min-w-full text-sm text-left">
+        <thead className="bg-gray-200">
+          <tr>
+            <th className="p-3 font-medium text-gray-700">Date</th>
+            <th className="p-3 font-medium text-gray-700">Name</th>
+            <th className="p-3 font-medium text-gray-700">Tag(s)</th>
+            <th className="p-3 font-medium text-gray-700">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {transactions.map((tx) => (
+            <tr key={tx.id} className="border-t hover:bg-gray-50">
+              <td className="p-3 text-gray-800">{tx.date}</td>
+              <td className="p-3 text-gray-800">{tx.name}</td>
+              <td className="p-3 text-gray-800">
+                <input
+                  type="text"
+                  value={tx.tag}
+                  onChange={(e) => handleTagChange(tx.id, e.target.value)}
+                  className="w-full bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400"
+                />
+              </td>
+              <td
+                className={`p-3 ${
+                  tx.amount < 0 ? "text-red-400" : "text-green-600"
+                }`}
+              >
+                {tx.amount < 0 ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default TransactionTable;
