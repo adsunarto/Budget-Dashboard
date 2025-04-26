@@ -29,15 +29,23 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
     spendingMap[tx.tag] += Math.abs(tx.amount);
   });
 
+  // Add any missing categories from transactions to budgets
+  const updatedBudgets = [...budgets];
+  Object.keys(spendingMap).forEach(category => {
+    if (!updatedBudgets.some(b => b.category === category)) {
+      updatedBudgets.push({ category, budgeted: 1000 }); // Default budget of 1000 for new categories
+    }
+  });
+
   // Combine category list from either budgets or spendingMap
   const categories = Array.from(new Set([
-    ...budgets.map((b) => b.category),
+    ...updatedBudgets.map((b) => b.category),
     ...Object.keys(spendingMap),
   ])).filter(category => category !== "Paycheck");
 
   const rawData = categories.map((category) => {
     const spent = spendingMap[category] || 0;
-    const budgeted = budgets.find((b) => b.category === category)?.budgeted ?? 1000;
+    const budgeted = updatedBudgets.find((b) => b.category === category)?.budgeted ?? 1000;
     return 100 * spent / (budgeted === 0 ? 1 : budgeted); // Avoid divide-by-zero
   });
 
