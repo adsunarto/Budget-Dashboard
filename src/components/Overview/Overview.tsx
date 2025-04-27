@@ -1,5 +1,5 @@
 // src/components/Dashboard/Sidebar.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import BudgetTable from "@/components/Overview/BudgetTable";
 import VerticalBarChart from "@/components/Overview/VerticalBarChart";
 import AIExplanation from "@/components/Overview/AIExplanation";
@@ -22,16 +22,31 @@ type Budget = {
     amountSpent: number;
 };
 type Assets = {
-    accounts: object;
-    loans: object;
-    investments: object;
-}
-type props = {
+    accounts: {
+        saving: number;
+        checking: number;
+    };
+    loans: {
+        [key: string]: number;
+    };
+    investments: {
+        [key: string]: number;
+    };
+};
+type UserData = {
+    netSavings: number;
+    categoriesOverBudget: number;
+    budgeteerScore: number;
+    budgets: any[];
+    assets: Assets;
+};
+type Props = {
     transactions: Transaction[];
-    assets: Assets[];
+    assets: Assets;
+    onDataUpdate?: (data: UserData) => void;
 };
 
-const Overview = ({ transactions, assets }) => {
+const Overview = ({ transactions, assets, onDataUpdate }: Props) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth(); // 0 = January, 11 = December
     const currentYear = currentDate.getFullYear();
@@ -58,16 +73,6 @@ const Overview = ({ transactions, assets }) => {
         return tx.tag !== "Income";
     });
 
-    function calculateNetSavings() {
-        let total = 0
-        transactionsThisMonth.forEach(tx => {
-            total += tx.amount;
-        });
-        return parseFloat(total.toFixed(2));
-    }
-
-    const [netSavings] = useState(calculateNetSavings);
-
     const defaultBudgets: Budget[] = Array.from(
         transactionsThisMonth
             .filter(tx => tx.tag !== "Income")
@@ -86,28 +91,21 @@ const Overview = ({ transactions, assets }) => {
         getFromLocalStorage("budgets", defaultBudgets)
     );
 
-    function calculateBudgeteerScore() {
-        const minScore = 300;
-        const maxScore = 850;
+    // Initialize state with default values
+    const [catsOverBudget, setCatsOverBudget] = useState(0);
+    const [budgeteerScore, setBudgeteerScore] = useState(300);
+    const [netSavings, setNetSavings] = useState(0);
+    const [AIexplanation, setAIexplanation] = useState({ "title": "", "explanation": "" });
+    const [showAIexplain, setShowAIexplain] = useState(false);
 
-        // 1. Normalize net savings to a range of -1 to 1
-        const maxSavingsImpact = 5000; // Cap impact at ±$5000
-        const savingsRatio = Math.max(-1, Math.min(netSavings / maxSavingsImpact, 1));
-        const savingsScore = minScore + ((savingsRatio + 1) / 2) * (maxScore - minScore);
-
-        // 2. Penalize categories over budget — more harshly for more categories
-        const penaltyPerCategory = 50;
-        const categoriesPenalty = catsOverBudget * penaltyPerCategory;
-        const categoriesScore = Math.max(minScore, maxScore - categoriesPenalty);
-
-        // 3. Weight final score (e.g., 60% categories, 40% savings)
-        const finalScore = (0.40 * categoriesScore) + (0.60 * savingsScore);
-
-        return Math.floor(Math.max(minScore, Math.min(finalScore, maxScore)));
-    }
-
-    function calculateCatsOverBudget() {
-        // Calculate spending by category from current month's transactions
+    // Update all values when dependencies change
+    useEffect(() => {
+        // Calculate net savings
+        const newNetSavings = parseFloat(transactionsThisMonth.reduce((sum, tx) => {
+            return tx.tag === "Income" ? sum + tx.amount : sum - tx.amount;
+        }, 0).toFixed(2));
+        
+        // Calculate categories over budget
         const spendingByCategory: Record<string, number> = {};
         transactionsThisMonth.forEach((tx) => {
             if (!spendingByCategory[tx.tag]) {
@@ -116,28 +114,58 @@ const Overview = ({ transactions, assets }) => {
             spendingByCategory[tx.tag] += tx.amount;
         });
 
-        let overBudget = 0;
-        budgets
+        // Update budgets with current spending
+        const updatedBudgets = budgets.map(budget => ({
+            ...budget,
+            amountSpent: Math.abs(spendingByCategory[budget.category] || 0)
+        }));
+
+        let newCatsOverBudget = 0;
+        updatedBudgets
             .filter(budget => budget.category !== "Income")
             .forEach(budget => {
-                const spent = spendingByCategory[budget.category] || 0;
-                if (-1 * spent > budget.budgeted) {
-                    overBudget += 1;
+                if (budget.amountSpent > budget.budgeted) {
+                    newCatsOverBudget += 1;
                 }
             });
-        return overBudget;
-    }
 
-    const [catsOverBudget, setCatsOverBudget] = useState(calculateCatsOverBudget);
-    const [budgeteerScore, setBudgeteerScore] = useState(calculateBudgeteerScore());
-    const [AIexplanation, setAIexplanation] = useState({ "title": "", "explanation": "" });
-    const [showAIexplain, setShowAIexplain] = useState(false);
+        // Calculate budgeteer score
+        const minScore = 300;
+        const maxScore = 850;
+        const maxSavingsImpact = 5000;
+        const savingsRatio = Math.max(-1, Math.min(newNetSavings / maxSavingsImpact, 1));
+        const savingsScore = minScore + ((savingsRatio + 1) / 2) * (maxScore - minScore);
+        const penaltyPerCategory = 50;
+        const categoriesPenalty = newCatsOverBudget * penaltyPerCategory;
+        const categoriesScore = Math.max(minScore, maxScore - categoriesPenalty);
+        const newBudgeteerScore = Math.floor(Math.max(minScore, Math.min((0.40 * categoriesScore) + (0.60 * savingsScore), maxScore)));
 
+        // Update states
+        setNetSavings(newNetSavings);
+        setCatsOverBudget(newCatsOverBudget);
+        setBudgeteerScore(newBudgeteerScore);
+
+        // Only update budgets if they've actually changed
+        const budgetsChanged = JSON.stringify(updatedBudgets) !== JSON.stringify(budgets);
+        if (budgetsChanged) {
+            setBudgets(updatedBudgets);
+        }
+
+        // Notify parent
+        if (onDataUpdate) {
+            onDataUpdate({
+                netSavings: newNetSavings,
+                categoriesOverBudget: newCatsOverBudget,
+                budgeteerScore: newBudgeteerScore,
+                budgets: updatedBudgets,
+                assets
+            });
+        }
+    }, [transactionsThisMonth, assets, onDataUpdate]);
+
+    // Save budgets to localStorage
     useEffect(() => {
         setToLocalStorage("budgets", budgets);
-
-        setCatsOverBudget(calculateCatsOverBudget());
-        setBudgeteerScore(calculateBudgeteerScore());
     }, [budgets]);
 
     function getBudgeteerScoreCategory(score: number) {
@@ -208,7 +236,7 @@ const Overview = ({ transactions, assets }) => {
         },
         {
             "ai-explain-id": "ai-explain-cats-over-budget",
-            "title": "Categories Over Budget",
+            "title": "Over Budget",
             "id": "categories-over-budget",
             "value": catsOverBudget,
             "valueSymbol": "",
@@ -241,10 +269,10 @@ const Overview = ({ transactions, assets }) => {
         "budgets": budgets,
         "assets": assets
     }
-    console.log(userData);
+    // console.log(userData);
 
     const fetchAIResponse = async (topic: string, context: string[]) => {
-        console.log(`Generating response for ${topic}`)
+        // console.log(`Generating response for ${topic}`)
         const promptParts = [
             "You are an assistant that helps with budgeting. Your goal is to provide helpful, clear explanations.",
             "Limit your response to a short paragraph of a few sentences (with no markdown and no emojis), using only the information provided.",
@@ -299,7 +327,7 @@ const Overview = ({ transactions, assets }) => {
 
     const handleExplainClick = async (topic: string, context: string[]) => {
         setAIexplanation({ "title": topic, "explanation": "Generating response..." })
-        console.log("userData", userData);
+        // console.log("userData", userData);
         setShowAIexplain(true);
         await fetchAIResponse(topic, context);
     };
@@ -312,36 +340,31 @@ const Overview = ({ transactions, assets }) => {
         <>
             {/* Card Container */}
             <div className="flex justify-center" style={{ gap: "10px" }}>
-                {cards.map(card => (
-                    // Cards
-                    <div id={card.id} className="relative flex bg-white shadow-lg rounded-lg w-[400px] h-[200px] m-4 flex-col justify-center items-center text-lg text-center">
-                        {/* Button in top-right */}
-                        <button id={card["ai-explain-id"]} className="group absolute top-2 right-2" onClick={() => handleExplainClick(card.title, card.promptContext)}>
-                            <img className="icon h-4 w-4" src="src/assets/ai-sparkle.png" alt="Explain with AI" />
-
-                            {/* Tooltip below the icon */}
-                            <div className="absolute hidden group-hover:flex flex-col items-center top-full mt-1 left-1/2 -translate-x-1/2 z-10">
-                                <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
-                                    Explain with AI
-                                </div>
-                            </div>
-                        </button>
-
-                        <div className="flex flex-col items-center mt-6">
-                            {/* Title */}
+                {cards.map((card, index) => (
+                    <div 
+                        key={`card-${index}`}
+                        id={card.id} 
+                        className="relative flex bg-white shadow-lg rounded-lg w-[400px] h-[200px] m-4 flex-col"
+                    >
+                        {/* Title and AI button row */}
+                        <div className="flex justify-between items-center p-2">
                             <h3 className="text-gray-700 font-medium">{card.title}</h3>
+                            <button id={card["ai-explain-id"]} className="group relative" onClick={() => handleExplainClick(card.title, card.promptContext)}>
+                                <img className="icon h-4 w-4" src="src/assets/ai-sparkle.png" alt="Explain with AI" />
+                                <div className="absolute hidden group-hover:flex flex-col items-center top-full right-0 mt-1 z-10">
+                                    <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
+                                        Explain with AI
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
 
-                            {/* Value */}
+                        {/* Centered value */}
+                        <div className="flex-1 flex items-center justify-center">
                             <h2 className={card.color}>
                                 {card.id === "credit-score" ? (
-                                    <div className="w-[150px] h-[150px] mt-0">
-                                        <GaugeComponent
-                                            type="radial"
-                                            value={50}
-                                            minValue={0}
-                                            maxValue={100}
-                                        />
-                                    </div>
+                                    <>
+                                    </>
                                 ) : (
                                     <>
                                         {card.value < 0 ? "-" : ""}{card.valueSymbol}{Math.abs(card.value)}{card.additionalDetail}
@@ -362,7 +385,13 @@ const Overview = ({ transactions, assets }) => {
             )}
 
             {/* Budget Table Component */}
-            <BudgetTable transactions={transactionsThisMonth} budgets={budgets} setBudgets={setBudgets} updateCard={calculateCatsOverBudget} updateScore={calculateBudgeteerScore} />
+            <BudgetTable 
+                transactions={transactionsThisMonth} 
+                budgets={budgets} 
+                setBudgets={setBudgets} 
+                currentNetSavings={netSavings}
+                currentCatsOverBudget={catsOverBudget}
+            />
 
             <div className="flex">
                 {/* Line Graph Component */}

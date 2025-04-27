@@ -12,13 +12,13 @@ type Budget = {
 };
 type props = {
   transactions: Transaction[];
-  budgets: Budget[]; // optional for comparing with fixed budget goals
-  setBudgets: any,
-  updateCard: any,
-  updateScore: any
+  budgets: Budget[];
+  setBudgets: React.Dispatch<React.SetStateAction<Budget[]>>;
+  currentNetSavings: number;
+  currentCatsOverBudget: number;
 };
 
-const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScore }: props) => {
+const BudgetTable = ({ transactions, budgets, setBudgets, currentNetSavings, currentCatsOverBudget }: props) => {
   // Aggregate spending by tag
   const spendingByCategory: Record<string, number> = {};
 
@@ -31,7 +31,7 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
 
   // Merge spending with budget values
   const categories = Object.entries(spendingByCategory)
-    .filter(([category]) => category !== 'Income') // 👈 filter OUT "Paycheck" first
+    .filter(([category]) => category !== 'Income')
     .map(([category, spent], index) => {
       const budgetMatch = budgets.find((b) => b.category === category);
       return {
@@ -41,7 +41,6 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
         budgeted: budgetMatch ? budgetMatch.budgeted : 0,
       };
     });
-
 
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -62,15 +61,13 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
                   type="number"
                   onChange={(e) => {
                     const value = e.target.value;
-                    setBudgets((prev) =>
-                      prev.map((b) =>
+                    setBudgets((prev: Budget[]) =>
+                      prev.map((b: Budget) =>
                         b.category === tx.category
                           ? { ...b, budgeted: value === "" ? 0 : parseFloat(value) }
                           : b
                       )
                     );
-                    updateCard();
-                    updateScore();
                   }}
                   value={
                     budgets.find((b) => b.category === tx.category)?.budgeted.toString() || ""
@@ -79,23 +76,21 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
                   className="w-24 bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400"
                 />
               </td>
-              {tx.spent < 0 ? (
-                <td className="p-3 text-red-400">
-                  -$
-                  {Math.abs(tx.spent).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
-              ) : (
-                <td className="p-3 text-green-600">
-                  +$
-                  {Math.abs(tx.spent).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
-              )}
+              <td className={`p-3 ${Math.abs(tx.spent) > (budgets.find((b) => b.category === tx.category)?.budgeted || 0) ? "text-red-400" : "text-green-600"}`}>
+                $
+                {Math.abs(tx.spent).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+                <span className="group relative">
+                  {Math.abs(tx.spent) > (budgets.find((b) => b.category === tx.category)?.budgeted || 0) ? " 📈" : " 📉"}
+                  <div className="absolute hidden group-hover:flex flex-col items-center top-1/2 -translate-y-1/2 left-full ml-1 z-10">
+                    <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
+                      {Math.abs(tx.spent) > (budgets.find((b) => b.category === tx.category)?.budgeted || 0) ? "Over budget" : "Under budget"}
+                    </div>
+                  </div>
+                </span>
+              </td>
             </tr>
           ))}
         </tbody>

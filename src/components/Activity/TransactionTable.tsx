@@ -51,11 +51,10 @@ const TransactionTable = ({ transactions }: Props) => {
                 />
               </td>
               <td
-                className={`p-3 ${
-                  tx.amount < 0 ? "text-red-400" : "text-green-600"
-                }`}
+                className={`p-3 ${tx.tag === "Income" ? "text-green-600" : "text-red-400"
+                  }`}
               >
-                {tx.amount < 0 ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
+                {tx.tag === "Income" ? "+" : "-"}${Math.abs(tx.amount).toFixed(2)}
               </td>
             </tr>
           ))}
