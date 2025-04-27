@@ -1,4 +1,5 @@
 import { Line } from "react-chartjs-2";
+import { format } from 'date-fns';
 import { useMemo, useState } from "react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
 
@@ -13,153 +14,139 @@ type Transaction = {
     amount: number;
 };
 
-type TimeRange = 'weekly' | 'monthly' | 'yearly';
+type TimeRange = 'week' | 'month' | 'year';
 
 type Props = {
     transactions: Transaction[];
 };
 
-const formatDateLabel = (dateObj: Date, range: TimeRange) => {
-    const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
+const getCurrentDateRange = (range: TimeRange) => {
+    const now = new Date();
+    const startDate = new Date(now);
     
-    if (range === 'weekly') {
-        const year = dateObj.getFullYear();
-        const month = months[dateObj.getMonth()];
-        const firstDay = new Date(year, dateObj.getMonth(), 1).getDay();
-        const weekNum = Math.ceil((dateObj.getDate() + firstDay) / 7);
-        return `${month} W${weekNum}`;
-    } else if (range === 'monthly') {
-        return `${months[dateObj.getMonth()]} ${dateObj.getFullYear().toString().slice(-2)}`;
-    } else {
-        return dateObj.getFullYear().toString();
-    }
-};
+    switch (range) {
+        case 'week':
+            // Start of current week (Sunday)
+            startDate.setDate(now.getDate() - now.getDay());
+            return {
+                start: startDate,
+                end: new Date(startDate),
+                days: 7,
+                increment: (date: Date) => new Date(date.setDate(date.getDate() + 1)),
+                format: (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short' })
+            };
+        case 'month':
+            // Start of current month
+            startDate.setDate(1);
+            return {
+                start: startDate,
+                end: new Date(now.getFullYear(), now.getMonth() + 1, 0), // Last day of month
+                days: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
+                increment: (date: Date) => new Date(date.setDate(date.getDate() + 1)),
+                format: (date: Date) => date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+            };
+        case 'year':
+            // startDate.setMonth(0, 1); // January 1st
+            // const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
+            const monthCount = now.getMonth() + 1; // e.g. April = 3 + 1 = 4 months
 
-const aggregateData = (transactions: Transaction[], range: TimeRange) => {
-    const trends: Record<string, Record<string, number>> = {};
+            // return {
+            //     start: startDate,
+            //     end: endDate,
+            //     days: monthCount,
+            //     increment: (date: Date) => new Date(date.setMonth(date.getMonth() + 1)),
+            //     format: (date: Date) => date.toLocaleDateString('en-US', { month: 'short' })
+            // };
 
-    transactions.forEach((tx) => {
-        const date = new Date(tx.date);
-        let periodKey: string;
-        
-        if (range === 'weekly') {
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const firstDay = new Date(year, month, 1).getDay();
-            const weekNum = Math.ceil((date.getDate() + firstDay) / 7);
-            periodKey = `${year}-${month}-${weekNum}`;
-        } else if (range === 'monthly') {
-            periodKey = `${date.getFullYear()}-${date.getMonth()}`;
-        } else {
-            periodKey = `${date.getFullYear()}`;
-        }
-
-        if (!trends[tx.tag]) trends[tx.tag] = {};
-        trends[tx.tag][periodKey] = (trends[tx.tag][periodKey] || 0) + tx.amount;
-    });
-
-    return trends;
+            startDate.setMonth(0, 1);
+            return {
+                start: startDate,
+                end: now, // today
+                days: 12, // keep if you're still grouping by months
+                increment: (date: Date) => new Date(date.setMonth(date.getMonth() + 1)),
+                format: (date: Date) => date.toLocaleDateString('en-US', { month: 'short' })
+            };
+            }
 };
 
 const MoneyTrends = ({ transactions }: Props) => {
-    const [timeRange, setTimeRange] = useState<TimeRange>('monthly');
+    const [timeRange, setTimeRange] = useState<TimeRange>('month');
+    const dateRange = useMemo(() => getCurrentDateRange(timeRange), [timeRange]);
 
-    // Aggregating data by category based on selected time range
-    const categoryTrends = useMemo(() => {
-        return aggregateData(transactions, timeRange);
-    }, [transactions, timeRange]);
-
-    // Prepare data for the chart
+    // Filter and aggregate transactions for the current date range
     const chartData = useMemo(() => {
         const labels: string[] = [];
-        const datasets: any[] = [];
-        const allPeriods = new Set<string>();
+        const datasets: Record<string, number[]> = {};
+        
+        // Initialize date iterator and labels
+        const currentDate = new Date(dateRange.start);
+        for (let i = 0; i < dateRange.days; i++) {
+            labels.push(dateRange.format(new Date(currentDate)));
+            dateRange.increment(currentDate);
+        }
 
-        // Collect all unique periods across all categories
-        Object.values(categoryTrends).forEach((periodData) => {
-            Object.keys(periodData).forEach(period => allPeriods.add(period));
-        });
-
-        // Convert periods to dates for sorting
-        const sortedPeriods = Array.from(allPeriods).sort((a, b) => {
-            if (timeRange === 'yearly') {
-                return parseInt(a) - parseInt(b);
-            } else if (timeRange === 'monthly') {
-                const [yearA, monthA] = a.split('-').map(Number);
-                const [yearB, monthB] = b.split('-').map(Number);
-                return yearA !== yearB ? yearA - yearB : monthA - monthB;
-            } else {
-                // weekly
-                const [yearA, monthA, weekA] = a.split('-').map(Number);
-                const [yearB, monthB, weekB] = b.split('-').map(Number);
-                if (yearA !== yearB) return yearA - yearB;
-                if (monthA !== monthB) return monthA - monthB;
-                return weekA - weekB;
+        // Initialize datasets with zeros
+        transactions.forEach(tx => {
+            if (!datasets[tx.tag]) {
+                datasets[tx.tag] = new Array(dateRange.days).fill(0);
             }
         });
 
-        // Create labels in the correct format
-        sortedPeriods.forEach(period => {
-            let dateObj: Date;
-            if (timeRange === 'yearly') {
-                dateObj = new Date(parseInt(period), 0, 1);
-            } else if (timeRange === 'monthly') {
-                const [year, month] = period.split('-').map(Number);
-                dateObj = new Date(year, month, 1);
-            } else {
-                // weekly - approximate to first day of the week
-                const [year, month, week] = period.split('-').map(Number);
-                const firstDay = new Date(year, month, 1).getDay();
-                const firstDate = (week - 1) * 7 - firstDay + 1;
-                dateObj = new Date(year, month, firstDate);
+        // Aggregate transactions within date range
+        transactions.forEach(tx => {
+            const txDate = new Date(tx.date);
+            if (txDate >= dateRange.start && txDate <= dateRange.end) {
+                const index = timeRange === 'year' 
+                    ? txDate.getMonth() 
+                    : Math.floor((txDate.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+                
+                if (index >= 0 && index < dateRange.days) {
+                    if (!datasets[tx.tag]) {
+                        datasets[tx.tag] = new Array(dateRange.days).fill(0); 
+                    }
+                    datasets[tx.tag][index] += tx.amount*(-1);
+                }
             }
-            labels.push(formatDateLabel(dateObj, timeRange));
         });
 
-        // Create datasets for each category
-        Object.entries(categoryTrends).forEach(([category, periodData]) => {
-            const dataPoints = sortedPeriods.map(period => {
-                return periodData[period] || 0;
-            });
-
-            datasets.push({
-                label: category,
-                data: dataPoints,
-                fill: false,
-                borderColor: getRandomShades(),
-                tension: 0.4,
-            });
-        });
+        // Convert to Chart.js dataset format
+        const chartDatasets = Object.entries(datasets).map(([tag, data]) => ({
+            label: tag,
+            data,
+            fill: false,
+            borderColor: getRandomShades(),
+            tension: 0.4,
+        }));
 
         return {
             labels,
-            datasets,
+            datasets: chartDatasets,
         };
-    }, [categoryTrends, timeRange]);
+    }, [transactions, timeRange, dateRange]);
+
+    const getButtonClass = (range: TimeRange) => 
+        `px-4 py-2 rounded-md ${timeRange === range ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
 
     return (
         <div className="flex flex-col h-[50vh] w-full">
             <div className="flex justify-center mb-4 space-x-4">
                 <button
-                    onClick={() => setTimeRange('weekly')}
-                    className={`px-4 py-2 rounded-md ${timeRange === 'weekly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                    onClick={() => setTimeRange('week')}
+                    className={getButtonClass('week')}
                 >
-                    Weekly
+                    This Week
                 </button>
                 <button
-                    onClick={() => setTimeRange('monthly')}
-                    className={`px-4 py-2 rounded-md ${timeRange === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                    onClick={() => setTimeRange('month')}
+                    className={getButtonClass('month')}
                 >
-                    Monthly
+                    This Month
                 </button>
                 <button
-                    onClick={() => setTimeRange('yearly')}
-                    className={`px-4 py-2 rounded-md ${timeRange === 'yearly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                    onClick={() => setTimeRange('year')}
+                    className={getButtonClass('year')}
                 >
-                    Yearly
+                    This Year
                 </button>
             </div>
             
@@ -172,7 +159,9 @@ const MoneyTrends = ({ transactions }: Props) => {
                         plugins: {
                             title: {
                                 display: true,
-                                text: `Spending Trends by Category (${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)})`,
+                                text: `${timeRange === 'week' ? 'This Week' : timeRange === 'month' ? format(new Date(), 'MMMM yyyy') : format(new Date(), 'yyyy')}`,
+
+                                // text: `Spending Trends (${timeRange === 'week' ? 'This Week' : timeRange === 'month' ? 'This Month' : 'This Year'})`,
                                 font: {
                                     size: 18,
                                     family: "'Poppins', sans-serif",
@@ -217,6 +206,7 @@ const MoneyTrends = ({ transactions }: Props) => {
                                     font: {
                                         family: "'Poppins', sans-serif",
                                     },
+                                    maxRotation: timeRange === 'week' ? 45 : 0,
                                 },
                             },
                             y: {
@@ -246,6 +236,7 @@ const MoneyTrends = ({ transactions }: Props) => {
         </div>
     );
 };
+
 
 const getRandomShades = () => {
     const randomShades = [
