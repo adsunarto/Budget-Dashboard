@@ -25,8 +25,7 @@ const tabs = [
     { label: "Overview", icon: LayoutDashboard },
     { label: "Activity", icon: Activity },
     { label: "Learn", icon: Sparkles },
-    { label: "Plan", icon: Calendar },
-    { label: "Compare", icon: BarChart3 },
+    { label: "Insights", icon: BarChart3 },
 ];
 
 type SidebarProps = {

@@ -3,8 +3,7 @@ import { useState, useMemo } from "react";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import Overview from "@/components/Overview/Overview";
 import Activity from "@/components/Activity/Activity";
-import Plan from "@/components/Plan/Plan";
-import Compare from "@/components/Compare/Compare";
+import Insights from "@/components/Plan/Plan";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import InsightsPopup from "@/components/Activity/InsightsPopup";
@@ -137,8 +136,7 @@ const tabs = [
       }
     }} />,
   },
-  { name: "Plan", component: <Plan /> },
-  { name: "Compare", component: <Compare /> }
+  { name: "Insights", component: <Insights /> }
 ];
 
 export default function Dashboard() {
