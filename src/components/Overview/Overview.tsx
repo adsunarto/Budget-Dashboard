@@ -8,7 +8,6 @@ import MoneyTrends from "./MoneyTrends";
 import MoneyTrends2 from "./MoneyTrends2";
 import GaugeComponent from 'react-gauge-component';
 import Header from "@/components/Dashboard/Header"; // Add this import at the top
-
 import LineChart from "./LineChart";
 
 type Transaction = {
@@ -119,20 +118,75 @@ const Overview = ({ transactions }) => {
         const minScore = 300;
         const maxScore = 850;
 
-        // 1. Normalize net savings to a range of -1 to 1
+        // 1. Check if all budgets are met and net savings is positive
+        const allBudgetsMet = budgets.every(budget => {
+            if (budget.category === "Income") return true;
+            const spent = Math.abs(spendingByCategory[budget.category] || 0);
+            return spent <= budget.budgeted;
+        });
+
+        if (allBudgetsMet && netSavings > 0) {
+            // Calculate score based on net savings: 800 + (netSavings/1000 * 50), capped at 850
+            const savingsBasedScore = 800 + (netSavings / 1000 * 50);
+            return Math.min(Math.floor(savingsBasedScore), maxScore);
+        }
+
+        // 2. Normalize net savings to a range of -1 to 1
         const maxSavingsImpact = 5000; // Cap impact at ±$5000
         const savingsRatio = Math.max(-1, Math.min(netSavings / maxSavingsImpact, 1));
         const savingsScore = minScore + ((savingsRatio + 1) / 2) * (maxScore - minScore);
 
-        // 2. Penalize categories over budget — more harshly for more categories
-        const penaltyPerCategory = 50;
-        const categoriesPenalty = catsOverBudget * penaltyPerCategory;
-        const categoriesScore = Math.max(minScore, maxScore - categoriesPenalty);
+        // 3. Calculate penalties and bonuses
+        let scoreAdjustment = 0;
+        
+        // Check Rent/Utilities and Debt Payment funding - these have more impact
+        const rentBudget = budgets.find(b => b.category === "Rent/Utilities");
+        const debtBudget = budgets.find(b => b.category === "Debt Payment");
+        
+        // Check for unfunded essential categories
+        if (!rentBudget || rentBudget.budgeted === 0) {
+            scoreAdjustment -= 50; // Large penalty for unfunded Rent/Utilities
+        } else {
+            const spent = Math.abs(spendingByCategory["Rent/Utilities"] || 0);
+            scoreAdjustment += 30; // Bonus for having Rent/Utilities budgeted
+            if (spent > rentBudget.budgeted) {
+                scoreAdjustment -= 40; // Larger penalty for going over budget
+            }
+        }
 
-        // 3. Weight final score (e.g., 60% categories, 40% savings)
-        const finalScore = (0.40 * categoriesScore) + (0.60 * savingsScore);
+        if (!debtBudget || debtBudget.budgeted === 0) {
+            scoreAdjustment -= 50; // Large penalty for unfunded Debt Payment
+        } else {
+            const spent = Math.abs(spendingByCategory["Debt Payment"] || 0);
+            scoreAdjustment += 30; // Bonus for having Debt Payment budgeted
+            if (spent > debtBudget.budgeted) {
+                scoreAdjustment -= 40; // Larger penalty for going over budget
+            }
+        }
 
-        return Math.floor(Math.max(minScore, Math.min(finalScore, maxScore)));
+        // Check over-budget categories with graduated penalties
+        const overBudgetCategories = ["Food", "Subscription", "Transportation"];
+        overBudgetCategories.forEach(category => {
+            const budget = budgets.find(b => b.category === category);
+            if (budget) {
+                const spent = Math.abs(spendingByCategory[category] || 0);
+                if (spent > budget.budgeted) {
+                    const overBudgetRatio = spent / budget.budgeted;
+                    if (overBudgetRatio <= 1.2) { // Up to 20% over
+                        scoreAdjustment -= 5; // Small penalty
+                    } else if (overBudgetRatio <= 2.0) { // 20-100% over
+                        scoreAdjustment -= 10; // Medium penalty
+                    } else { // More than 100% over
+                        scoreAdjustment -= 15; // Larger penalty
+                    }
+                }
+            }
+        });
+
+        // 4. Apply adjustments to the base score
+        const adjustedScore = Math.max(minScore, Math.min(savingsScore + scoreAdjustment, maxScore));
+
+        return Math.floor(adjustedScore);
     }
 
     function calculateCatsOverBudget() {
@@ -149,8 +203,8 @@ const Overview = ({ transactions }) => {
         budgets
             .filter(budget => budget.category !== "Income")
             .forEach(budget => {
-                const spent = spendingByCategory[budget.category] || 0;
-                if (-1 * spent > budget.budgeted) {
+                const spent = Math.abs(spendingByCategory[budget.category] || 0);
+                if (spent > budget.budgeted) {
                     overBudget += 1;
                 }
             });
@@ -164,7 +218,6 @@ const Overview = ({ transactions }) => {
 
     useEffect(() => {
         setToLocalStorage("budgets", budgets);
-
         setCatsOverBudget(calculateCatsOverBudget());
         setBudgeteerScore(calculateBudgeteerScore());
     }, [budgets]);
@@ -182,6 +235,22 @@ const Overview = ({ transactions }) => {
             return "Poor";
         } else {
             return "Invalid score";
+        }
+    }
+
+    function getBudgeteerScoreEmoji(score: number) {
+        if (score >= 800 && score <= 850) {
+            return "😄"; // Excellent
+        } else if (score >= 740 && score < 800) {
+            return "🙂"; // Very Good
+        } else if (score >= 670 && score < 740) {
+            return "😐"; // Good
+        } else if (score >= 580 && score < 670) {
+            return "🙁"; // Fair
+        } else if (score >= 300 && score < 580) {
+            return "😵"; // Poor
+        } else {
+            return "❓";
         }
     }
 
@@ -416,8 +485,14 @@ const Overview = ({ transactions }) => {
         await fetchAIResponse(topic, context);
     };
 
+    const [scoreVisualMode, setScoreVisualMode] = useState<0 | 1 | 2>(0); // 0: number, 1: word, 2: emoji
+
+    const handleCycleScoreVisual = () => {
+        setScoreVisualMode((prev) => ((prev + 1) % 3) as 0 | 1 | 2);
+    };
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in overflow-x-hidden">
             {/* Primary Goal Card */}
             <div className="lg:col-span-3">
                 <div className="glass p-6">
@@ -466,8 +541,22 @@ const Overview = ({ transactions }) => {
                 <div className="flex flex-col gap-6">
                     {cards.map((card) => (
                         <div key={card.id} className="relative flex flex-col items-center text-center glass p-6">
-                            {/* Action Buttons in the top-right */}
+                            {/* Action Buttons */}
                             <div className="absolute top-4 right-4 flex gap-2">
+                                {card.title === "Budgeteer Score" && (
+                                    <button
+                                        onClick={handleCycleScoreVisual}
+                                        className="p-1 rounded-full transition hover:bg-gray-100 dark:hover:bg-gray-700 group relative"
+                                        title={`Current: ${scoreVisualMode === 0 ? 'Number' : scoreVisualMode === 1 ? 'Word' : 'Emoji'} (Click to cycle)`}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="absolute left-full ml-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            {scoreVisualMode === 0 ? 'Number → Word' : scoreVisualMode === 1 ? 'Word → Emoji' : 'Emoji → Number'}
+                                        </span>
+                                    </button>
+                                )}
                                 {activeExplanations.includes(card.title) ? (
                                     <>
                                         <button
@@ -506,10 +595,18 @@ const Overview = ({ transactions }) => {
 
                             {/* Card content */}
                             <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
-                            <h2 className={`text-3xl font-bold mt-4 ${card.color}`}>
-                                {card.value < 0 ? "-" : ""}{card.symbol}{Math.abs(card.value)}
-                                {card.additionalDetail}
-                            </h2>
+                            {card.title === "Budgeteer Score" ? (
+                                <h2 className={`text-3xl font-bold mt-4 ${card.color}`}>
+                                    {scoreVisualMode === 0 && card.value}
+                                    {scoreVisualMode === 1 && getBudgeteerScoreCategory(card.value)}
+                                    {scoreVisualMode === 2 && getBudgeteerScoreEmoji(card.value)}
+                                </h2>
+                            ) : (
+                                <h2 className={`text-3xl font-bold mt-4 ${card.color}`}>
+                                    {card.value < 0 ? "-" : ""}{card.symbol}{Math.abs(card.value)}
+                                    {card.additionalDetail}
+                                </h2>
+                            )}
 
                             {/* AI Explanation */}
                             {activeExplanations.includes(card.title) && (

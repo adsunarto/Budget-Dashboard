@@ -50,8 +50,8 @@ const TransactionTable = ({ transactions }: Props) => {
                   className="w-full bg-transparent border-b border-border focus:outline-none focus:border-primary transition"
                 />
               </td>
-              <td className={`p-4 font-semibold ${tx.amount < 0 ? "text-red-400" : "text-green-400"}`}>
-                {tx.amount < 0 ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
+              <td className={`p-4 font-semibold ${tx.tag !== "Income" ? "text-red-400" : "text-green-400"}`}>
+                {tx.tag !== "Income" ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
               </td>
             </tr>
           ))}

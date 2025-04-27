@@ -172,7 +172,37 @@ export default function Dashboard() {
       
       newSuggestions.push({
         id: 0,
-        text: `To build your emergency fund faster, consider increasing your monthly savings by 10%. This would help you reach your goal sooner.`,
+        text: `To ${primaryGoal.toLowerCase()}, consider increasing your monthly savings by 10%. This would help you reach your goal sooner.`,
+        category: "Savings",
+        currentBudget: currentSavings,
+        suggestedBudget: currentSavings * 1.1,
+      });
+    } else if (primaryGoal.toLowerCase().includes("student loans")) {
+      const currentDebtPayment = currentMonthSpending["Debt Payment"] || 0;
+      newSuggestions.push({
+        id: 0,
+        text: `To ${primaryGoal.toLowerCase()}, consider increasing your monthly debt payment by 10%. This would help you pay off your loans faster.`,
+        category: "Debt Payment",
+        currentBudget: currentDebtPayment,
+        suggestedBudget: currentDebtPayment * 1.1,
+      });
+    } else if (primaryGoal.toLowerCase().includes("eating out")) {
+      const currentFoodBudget = currentBudgets.find(b => b.category === "Food")?.budgeted || 0;
+      newSuggestions.push({
+        id: 0,
+        text: `To ${primaryGoal.toLowerCase()}, consider reducing your food budget by 10% and allocating more to groceries instead of dining out.`,
+        category: "Food",
+        currentBudget: currentFoodBudget,
+        suggestedBudget: currentFoodBudget * 0.9,
+      });
+    } else if (primaryGoal.toLowerCase().includes("condo")) {
+      const currentSavings = currentMonthSpending["Income"] - Object.values(currentMonthSpending)
+        .filter((_, i) => Object.keys(currentMonthSpending)[i] !== "Income")
+        .reduce((a, b) => a + b, 0);
+      
+      newSuggestions.push({
+        id: 0,
+        text: `To ${primaryGoal.toLowerCase()}, consider increasing your monthly savings by 10%. This would help you reach your down payment goal faster.`,
         category: "Savings",
         currentBudget: currentSavings,
         suggestedBudget: currentSavings * 1.1,
@@ -183,11 +213,17 @@ export default function Dashboard() {
     Object.entries(currentMonthSpending).forEach(([category, spent], index) => {
       if (category !== "Income") {
         const currentBudget = currentBudgets.find(b => b.category === category)?.budgeted || 0;
-        const suggestedBudget = Math.round(spent * 1.1); // 10% increase
+        
+        // Skip Rent/Utilities if it's already budgeted
+        if (category === "Rent/Utilities" && currentBudget > 0) {
+          return;
+        }
+        
+        const suggestedBudget = Math.round(currentBudget * 0.9); // 10% decrease from current budget
         
         newSuggestions.push({
           id: index + 1,
-          text: `Consider increasing your ${category} budget by 10% to better accommodate your spending patterns.`,
+          text: `Consider decreasing your ${category} budget by 10% to better accommodate your spending patterns.`,
           category,
           currentBudget,
           suggestedBudget,
@@ -213,6 +249,13 @@ export default function Dashboard() {
     const updatedResponses = [...suggestionResponses, suggestion];
     setSuggestionResponses(updatedResponses);
     setToLocalStorage("suggestionResponses", updatedResponses);
+
+    // Force a re-render of the Overview component to update the budgeteer score
+    const overviewComponent = tabs.find(tab => tab.name === "Overview")?.component;
+    if (overviewComponent) {
+      tabs[tabs.findIndex(tab => tab.name === "Overview")].component = 
+        <Overview transactions={transactions} />;
+    }
   };
 
   const handleDenySuggestion = (suggestion: Suggestion) => {

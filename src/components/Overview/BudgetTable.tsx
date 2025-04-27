@@ -47,13 +47,13 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-border bg-background shadow-sm">
-      <table className="min-w-full text-sm text-left">
+      <table className="w-full text-sm text-left">
         <thead className="bg-muted">
           <tr>
-            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Category</th>
-            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Budget</th>
-            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Amount Spent</th>
-            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Status</th>
+            <th className="p-2 font-semibold text-foreground text-xs uppercase tracking-wider w-1/3">Category</th>
+            <th className="p-2 font-semibold text-foreground text-xs uppercase tracking-wider w-1/3">Budget</th>
+            <th className="p-2 font-semibold text-foreground text-xs uppercase tracking-wider w-1/4">Amount Spent</th>
+            <th className="p-2 font-semibold text-foreground text-xs uppercase tracking-wider w-1/6">Status</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -81,34 +81,36 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
                 key={tx.category}
                 className="hover:bg-muted/40 transition"
               >
-                <td className="p-4 text-foreground font-medium">{tx.category}</td>
-                <td className="p-4 text-foreground">
-                  $
-                  <input
-                    type="number"
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setBudgets((prev: Budget[]) =>
-                        prev.map((b: Budget) =>
-                          b.category === tx.category
-                            ? { ...b, budgeted: value === "" ? 0 : parseFloat(value) }
-                            : b
-                        )
-                      );
-                      updateCard();
-                      updateScore();
-                    }}
-                    value={budgets.find((b) => b.category === tx.category)?.budgeted || ""}
-                    placeholder="0"
-                    className="w-24 bg-transparent border-b border-border focus:outline-none focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    step="0.01"
-                    min="0"
-                  />
+                <td className="p-2 text-foreground font-medium truncate">{tx.category}</td>
+                <td className="p-2 text-foreground">
+                  <div className="flex items-center gap-1">
+                    <span>$</span>
+                    <input
+                      type="number"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setBudgets((prev: Budget[]) =>
+                          prev.map((b: Budget) =>
+                            b.category === tx.category
+                              ? { ...b, budgeted: value === "" ? 0 : parseFloat(value) }
+                              : b
+                          )
+                        );
+                        updateCard();
+                        updateScore();
+                      }}
+                      value={budgets.find((b) => b.category === tx.category)?.budgeted || ""}
+                      placeholder="0"
+                      className="w-12 bg-transparent border-b border-border focus:outline-none focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
                 </td>
-                <td className="p-4 font-semibold">
+                <td className="p-2 font-semibold">
                   ${tx.spent.toFixed(2)}
                 </td>
-                <td className={`p-4 font-medium ${statusColor}`}>
+                <td className={`p-2 font-medium ${statusColor}`}>
                   {status}
                 </td>
               </tr>

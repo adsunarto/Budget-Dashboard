@@ -30,11 +30,11 @@ const getCurrentDateRange = (range: TimeRange) => {
     
     switch (range) {
         case 'week':
-            // Start of current week (Sunday)
-            startDate.setDate(now.getDate() - now.getDay());
+            // Start from 7 days ago
+            startDate.setDate(now.getDate() - 6); // -6 because we want 7 days total (including today)
             return {
                 start: startDate,
-                end: new Date(startDate),
+                end: now,
                 days: 7,
                 increment: (date: Date) => new Date(date.setDate(date.getDate() + 1)),
                 format: (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short' })
@@ -103,13 +103,37 @@ const MoneyTrends = ({ transactions }: Props) => {
             }
         });
 
+        // For year view, filter out months with zero data
+        if (timeRange === 'year') {
+            const filteredLabels: string[] = [];
+            const filteredData: number[] = [];
+            
+            dailyTotals.forEach((total, index) => {
+                if (total > 0) {
+                    filteredLabels.push(labels[index]);
+                    filteredData.push(total);
+                }
+            });
+
+            return {
+                labels: filteredLabels,
+                datasets: [{
+                    label: 'Total Spending',
+                    data: filteredData,
+                    fill: false,
+                    borderColor: '#3B82F6',
+                    tension: 0.4,
+                }],
+            };
+        }
+
         return {
             labels,
             datasets: [{
                 label: 'Total Spending',
                 data: dailyTotals,
                 fill: false,
-                borderColor: '#3B82F6', // Blue color for the line
+                borderColor: '#3B82F6',
                 tension: 0.4,
             }],
         };
@@ -125,19 +149,19 @@ const MoneyTrends = ({ transactions }: Props) => {
                     onClick={() => setTimeRange('week')}
                     className={getButtonClass('week')}
                 >
-                    This Week
+                    Past Week
                 </button>
                 <button
                     onClick={() => setTimeRange('month')}
                     className={getButtonClass('month')}
                 >
-                    This Month
+                    Past Month
                 </button>
                 <button
                     onClick={() => setTimeRange('year')}
                     className={getButtonClass('year')}
                 >
-                    This Year
+                    Past Year
                 </button>
             </div>
             

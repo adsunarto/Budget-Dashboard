@@ -43,24 +43,40 @@ const Activity = ({ transactions: initialTransactions }: Props) => {
         );
     }, [selectedMonth, selectedYear, parsedTransactions]);
 
+    // Check if there are transactions in previous month
+    const hasPrevTransactions = useMemo(() => {
+        const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+        const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+        return parsedTransactions.some(
+            tx => tx.month === prevMonth && tx.year === prevYear
+        );
+    }, [selectedMonth, selectedYear, parsedTransactions]);
+
+    // Check if there are transactions in next month
+    const hasNextTransactions = useMemo(() => {
+        const nextMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
+        const nextYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+        return parsedTransactions.some(
+            tx => tx.month === nextMonth && tx.year === nextYear
+        );
+    }, [selectedMonth, selectedYear, parsedTransactions]);
+
     // Update to previous month
     const handlePrevMonth = () => {
-        if (selectedMonth === 0) {
-            setSelectedMonth(11);
-            setSelectedYear(selectedYear - 1);
-        } else {
-            setSelectedMonth(selectedMonth - 1);
-        }
+        if (!hasPrevTransactions) return;
+        const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+        const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+        setSelectedMonth(prevMonth);
+        setSelectedYear(prevYear);
     };
 
     // Update to next month
     const handleNextMonth = () => {
-        if (selectedMonth === 11) {
-            setSelectedMonth(0);
-            setSelectedYear(selectedYear + 1);
-        } else {
-            setSelectedMonth(selectedMonth + 1);
-        }
+        if (!hasNextTransactions) return;
+        const nextMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
+        const nextYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+        setSelectedMonth(nextMonth);
+        setSelectedYear(nextYear);
     };
 
     return (
@@ -74,13 +90,23 @@ const Activity = ({ transactions: initialTransactions }: Props) => {
                 <div className="flex space-x-2">
                     <button
                         onClick={handlePrevMonth}
-                        className="w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition hover:bg-muted text-muted-foreground"
+                        disabled={!hasPrevTransactions}
+                        className={`w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            hasPrevTransactions 
+                                ? "hover:bg-muted text-muted-foreground" 
+                                : "opacity-50 cursor-not-allowed text-muted-foreground/50"
+                        }`}
                     >
                         <i className="fa-solid fa-chevron-left"></i>
                     </button>
                     <button
                         onClick={handleNextMonth}
-                        className="w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition hover:bg-muted text-muted-foreground"
+                        disabled={!hasNextTransactions}
+                        className={`w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            hasNextTransactions 
+                                ? "hover:bg-muted text-muted-foreground" 
+                                : "opacity-50 cursor-not-allowed text-muted-foreground/50"
+                        }`}
                     >
                         <i className="fa-solid fa-chevron-right"></i>
                     </button>
