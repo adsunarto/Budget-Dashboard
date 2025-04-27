@@ -20,6 +20,8 @@ type Props = {
     transactions: Transaction[];
 };
 
+const colorMap = new Map<string, string>();
+
 const getCurrentDateRange = (range: TimeRange) => {
     const now = new Date();
     const startDate = new Date(now);
@@ -109,12 +111,12 @@ const MoneyTrends = ({ transactions }: Props) => {
             }
         });
 
-        // Convert to Chart.js dataset format
+        // Then in your chartDatasets mapping, replace getRandomShades() with:
         const chartDatasets = Object.entries(datasets).map(([tag, data]) => ({
             label: tag,
             data,
             fill: false,
-            borderColor: getRandomShades(),
+            borderColor: getColorForCategory(tag), // Use consistent color per category
             tension: 0.4,
         }));
 
@@ -238,38 +240,30 @@ const MoneyTrends = ({ transactions }: Props) => {
 };
 
 
-const getRandomShades = () => {
+const getColorForCategory = (category: string) => {
+    // If we already have a color for this category, return it
+    if (colorMap.has(category)) {
+      return colorMap.get(category)!;
+    }
+  
+    // Otherwise generate a new color and store it
     const randomShades = [
-        '#1A3E72', // Deep navy
-        '#2D5C9E', // Corporate blue
-        '#4A89DC', // Bright banking blue
-        '#1565C0', // Royal blue
-        '#2196F3', // Sky blue (lighter accent)
-
-        '#1B5E20', // Forest green
-        '#388E3C', // Financial green
-        '#66BB6A', // Positive growth
-        '#00897B', // Teal (professional)
-        '#43A047',  // Credit/debit green
-
-        '#FFD700', // Pure gold
-        '#FFC400', // Bullion gold
-        '#FFA000', // Amber (darker)
-        '#FFF176', // Highlight yellow
-        '#FDD835',  // Profit gold
-
-        '#6A1B9A', // Deep purple
-        '#4527A0', // Royal purple
-        '#7E57C2', // Medium purple
-        '#9575CD',  // Soft purple
-
-        '#00897B', // Dark teal
-        '#26A69A', // Medium teal
-        '#4DB6AC', // Light teal
-        '#80CBC4'  // Muted teal
+      '#1A3E72', '#2D5C9E', '#4A89DC', '#1565C0', '#2196F3',
+      '#1B5E20', '#388E3C', '#66BB6A', '#00897B', '#43A047',
+      '#FFD700', '#FFC400', '#FFA000', '#FFF176', '#FDD835',
+      '#6A1B9A', '#4527A0', '#7E57C2', '#9575CD', '#00897B',
+      '#26A69A', '#4DB6AC', '#80CBC4'
     ];
     
-    return randomShades[Math.floor(Math.random() * randomShades.length)];
-};
+    // Use the category's hash to pick a consistent color
+    const hash = Array.from(category).reduce(
+      (hash, char) => char.charCodeAt(0) + ((hash << 5) - hash),
+      0
+    );
+    const color = randomShades[Math.abs(hash) % randomShades.length];
+    
+    colorMap.set(category, color);
+    return color;
+  };
 
 export default MoneyTrends;
