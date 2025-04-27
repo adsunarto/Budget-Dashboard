@@ -17,6 +17,14 @@ type Props = {
     transactions: Transaction[];
 };
 
+const formatMonthYear = (dateObj) => {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return `${months[dateObj.getMonth()]} ${dateObj.getFullYear().toString().slice(-2)}`;
+};
+
 const MoneyTrends = ({ transactions }: Props) => {
     // Aggregating data by category per month
     const categoryTrends = useMemo(() => {
@@ -24,7 +32,7 @@ const MoneyTrends = ({ transactions }: Props) => {
 
         transactions.forEach((tx) => {
             const dateObj = new Date(tx.date);
-            const monthYear = `${dateObj.getMonth() + 1}-${dateObj.getFullYear()}`; // Format as MM-YYYY
+            const monthYear = formatMonthYear(dateObj); // "Apr 2025" (current month/year)
             if (!trends[tx.tag]) {
                 trends[tx.tag] = {};
             }
@@ -132,7 +140,7 @@ const MoneyTrends = ({ transactions }: Props) => {
                         },
                         title: {
                         display: true,
-                        text: 'Month-Year',
+                        // text: 'Month-Year',
                         font: {
                             family: "'Poppins', sans-serif",
                             weight: '500',
