@@ -161,8 +161,25 @@ export default function Dashboard() {
   const generateSuggestions = () => {
     console.log("Generating suggestions...");
     const currentBudgets: { category: string; budgeted: number }[] = getFromLocalStorage("budgets", []);
+    const primaryGoal = getFromLocalStorage("primaryGoal", "Building a 6-month emergency fund");
     const newSuggestions: Suggestion[] = [];
 
+    // Add goal-specific suggestions
+    if (primaryGoal.toLowerCase().includes("emergency fund")) {
+      const currentSavings = currentMonthSpending["Income"] - Object.values(currentMonthSpending)
+        .filter((_, i) => Object.keys(currentMonthSpending)[i] !== "Income")
+        .reduce((a, b) => a + b, 0);
+      
+      newSuggestions.push({
+        id: 0,
+        text: `To build your emergency fund faster, consider increasing your monthly savings by 10%. This would help you reach your goal sooner.`,
+        category: "Savings",
+        currentBudget: currentSavings,
+        suggestedBudget: currentSavings * 1.1,
+      });
+    }
+
+    // Add regular budget suggestions
     Object.entries(currentMonthSpending).forEach(([category, spent], index) => {
       if (category !== "Income") {
         const currentBudget = currentBudgets.find(b => b.category === category)?.budgeted || 0;

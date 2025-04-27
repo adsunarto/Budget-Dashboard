@@ -46,9 +46,9 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
 
   const rawData = categories.map((category) => {
     const spent = spendingMap[category] || 0;
-    const budgeted = updatedBudgets.find((b) => b.category === category)?.budgeted || 0;
+    const budgeted = updatedBudgets.find((b) => b.category === category)?.budgeted || 1;
     // Calculate percentage of budget spent (spent is already positive)
-    return budgeted === 0 ? 0 : (spent / budgeted) * 100;
+    return (spent / budgeted) * 100;
   });
 
   const data = {
@@ -82,6 +82,10 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
             if (value < 90) return '#EF4444';   // red
             if (value < 100) return '#FACC15';  // orange
             return '#34D399';                   // green
+          } else if (["Rent/Utilities", "Debt Payment"].includes(category)) {
+            if (value < 90) return redGradient;   // red
+            if (value < 100) return orangeGradient; // orange
+            return greenGradient;                   // green
           } else {
             if (value < 90) return greenGradient;   // green
             if (value <= 100) return orangeGradient; // orange

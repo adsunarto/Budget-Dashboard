@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getFromLocalStorage } from "@/lib/storage";
 
 type Suggestion = {
   id: number;
@@ -17,16 +18,33 @@ type Props = {
 
 const InsightsPopup = ({ suggestions, onApprove, onDeny, onClose }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [primaryGoal, setPrimaryGoal] = useState("");
   const currentSuggestion = suggestions[currentIndex];
 
+  useEffect(() => {
+    const goal = getFromLocalStorage("primaryGoal", "Build 6 month emergency fund");
+    setPrimaryGoal(goal);
+  }, []);
+
+  const getGoalIcon = () => {
+    if (primaryGoal.toLowerCase().includes("emergency fund")) {
+      return "🛡️";
+    } else if (primaryGoal.toLowerCase().includes("student loans")) {
+      return "🎓";
+    } else if (primaryGoal.toLowerCase().includes("eating out")) {
+      return "🍽️";
+    } else if (primaryGoal.toLowerCase().includes("condo")) {
+      return "🏠";
+    }
+    return "🎯";
+  };
+
   const calculateSuggestedBudget = (suggestion: Suggestion) => {
-    // Use the actual suggested budget value from the suggestion
     return suggestion.suggestedBudget;
   };
 
   const handleDecision = (action: 'approve' | 'deny') => {
     if (action === 'approve') {
-      // Check if the suggestion is about budget adjustment
       const isBudgetAdjustment = currentSuggestion.text.toLowerCase().includes('budget');
       
       if (isBudgetAdjustment) {
@@ -34,7 +52,6 @@ const InsightsPopup = ({ suggestions, onApprove, onDeny, onClose }: Props) => {
         const adjustedSuggestion = {
           ...currentSuggestion,
           suggestedBudget: newBudget,
-          // Ensure we pass the category for budget updates
           category: currentSuggestion.category
         };
         onApprove(adjustedSuggestion);
@@ -56,40 +73,46 @@ const InsightsPopup = ({ suggestions, onApprove, onDeny, onClose }: Props) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
-      <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-2xl mx-4 shadow-xl border border-gray-700">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-200">Insights</h2>
+      <div className="bg-background rounded-2xl p-8 w-full max-w-2xl mx-4 shadow-xl border border-border">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-4">
+            <h2 className="text-3xl font-semibold text-foreground">Insights</h2>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 text-sm">
+              <span>{getGoalIcon()}</span>
+              <span className="text-muted-foreground">{primaryGoal}</span>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 transition"
+            className="text-muted-foreground hover:text-foreground transition"
           >
-            <i className="fa-solid fa-xmark text-xl"></i>
+            <i className="fa-solid fa-xmark text-2xl"></i>
           </button>
         </div>
 
-        <div className="space-y-4 mb-6">
-          <div className="p-4 rounded-lg border border-gray-700 bg-gray-900">
-            <p className="text-gray-200 mb-2">{currentSuggestion.text}</p>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
+        <div className="space-y-6 mb-8">
+          <div className="p-6 rounded-lg border border-border bg-muted/50">
+            <p className="text-lg text-foreground mb-4">{currentSuggestion.text}</p>
+            <div className="flex items-center gap-3 text-base text-muted-foreground">
               <span>{currentSuggestion.category}</span>
               <span>•</span>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-base">
                 Current: ${currentSuggestion.currentBudget.toFixed(2)}
               </div>
               <span>→</span>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-base">
                 Suggested: ${currentSuggestion.suggestedBudget.toFixed(2)}
               </div>
             </div>
           </div>
 
           {/* Progress Indicator */}
-          <div className="flex justify-center gap-2 mt-4">
+          <div className="flex justify-center gap-3 mt-6">
             {suggestions.map((_, index) => (
               <div
                 key={index}
-                className={`w-2 h-2 rounded-full ${
-                  index === currentIndex ? 'bg-blue-500' : 'bg-gray-600'
+                className={`w-3 h-3 rounded-full ${
+                  index === currentIndex ? 'bg-primary' : 'bg-muted'
                 }`}
                 aria-label={`Suggestion ${index + 1} of ${suggestions.length}`}
               />
@@ -97,16 +120,16 @@ const InsightsPopup = ({ suggestions, onApprove, onDeny, onClose }: Props) => {
           </div>
         </div>
 
-        <div className="flex justify-end gap-4">
+        <div className="flex justify-end gap-6">
           <button
             onClick={() => handleDecision('deny')}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-gray-200 transition border border-gray-600 hover:border-gray-500"
+            className="px-6 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground transition border border-border hover:border-foreground"
           >
             Deny
           </button>
           <button
             onClick={() => handleDecision('approve')}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition"
+            className="px-6 py-3 rounded-lg text-base font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition"
           >
             Approve
           </button>

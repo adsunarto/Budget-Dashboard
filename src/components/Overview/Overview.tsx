@@ -265,8 +265,31 @@ const Overview = ({ transactions }) => {
         };
     }, []);
 
+    const [primaryGoal, setPrimaryGoal] = useState(() => 
+        getFromLocalStorage("primaryGoal", "Building a 6-month emergency fund")
+    );
+
+    useEffect(() => {
+        setToLocalStorage("primaryGoal", primaryGoal);
+    }, [primaryGoal]);
+
     // Net Savings, Categories Over Budget, Budgeteer Score, Net Worth
     const cards = [
+        {
+            "ai-explain-id": "ai-explain-net-worth",
+            "title": "Net Worth",
+            "id": "net-worth",
+            "value": netWorth,
+            "symbol": "$",
+            "color": getnetSavingsColor(netWorth),
+            "additionalDetail": "",
+            "promptContext": [
+                "Tell me about my current net worth.",
+                "Explain how my assets and liabilities contribute to this value.",
+                "Provide insights on how to improve my net worth.",
+                "Use my assets and liabilities to explain the value. Do not discuss net savings."
+            ]
+        },
         {
             "ai-explain-id": "ai-explain-net-spend",
             "title": "Net Savings",
@@ -304,21 +327,6 @@ const Overview = ({ transactions }) => {
             "additionalDetail": " " + getBudgeteerScoreCategory(budgeteerScore),
             "promptContext": [
                 "Tell me what my Budgeteer Score is and why."
-            ]
-        },
-        {
-            "ai-explain-id": "ai-explain-net-worth",
-            "title": "Net Worth",
-            "id": "net-worth",
-            "value": netWorth,
-            "symbol": "$",
-            "color": getnetSavingsColor(netWorth),
-            "additionalDetail": "",
-            "promptContext": [
-                "Tell me about my current net worth.",
-                "Explain how my assets and liabilities contribute to this value.",
-                "Provide insights on how to improve my net worth.",
-                "Use my assets and liabilities to explain the value. Do not discuss net savings."
             ]
         }
     ]
@@ -395,74 +403,52 @@ const Overview = ({ transactions }) => {
         }
     };
 
+    const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
+
     const handleExplainClick = async (topic: string, context: string[]) => {
-        console.log(`Generating AI response for: ${topic}`);
-        setAIexplanation({ "title": topic, "explanation": "Generating response..." })
-        setShowAIexplain(true);
+        if (activeExplanation === topic) {
+            setActiveExplanation(null);
+            return;
+        }
+        setActiveExplanation(topic);
         await fetchAIResponse(topic, context);
     };
 
-    const handleCloseCard = () => {
-        setShowAIexplain(false);
+    const handleRefreshClick = async (topic: string, context: string[]) => {
+        await fetchAIResponse(topic, context);
     };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+            {/* Primary Goal Card */}
+            <div className="lg:col-span-3">
+                <div className="glass p-6">
+                    <div className="flex flex-col gap-4">
+                        <h4 className="text-base font-semibold">Primary Financial Goal</h4>
+                        <div className="flex flex-col gap-2">
+                            <select
+                                value={primaryGoal}
+                                onChange={(e) => setPrimaryGoal(e.target.value)}
+                                className="w-full bg-transparent border-b border-border focus:outline-none focus:border-primary transition text-base appearance-none"
+                            >
+                                <option value="Build 6 month emergency fund">Build 6 month emergency fund</option>
+                                <option value="Prioritizing paying off student loans">Prioritizing paying off student loans</option>
+                                <option value="Reducing money spent eating out">Reducing money spent eating out</option>
+                                <option value="Saving money for a condo">Saving money for a condo</option>
+                            </select>
+                            <p className="text-sm text-muted-foreground">
+                                This will help personalize your insights and suggestions
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Left Column */}
             <div className="flex flex-col gap-8 lg:col-span-2">
                 <div className="glass p-6">
                     <MoneyTrends2 transactions={transactionsMinusPaycheck} />
                 </div>
-
-
-                {/* Card Section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {cards.map((card) => (
-
-                        <div key={card.id} className="relative flex flex-col items-center text-center glass p-6">
-
-                            {/* AI Button in the top-right */}
-                            <div className="absolute top-4 right-4 group">
-                                <button
-                                    onClick={() => handleExplainClick(card.title, [])}
-                                    className="p-1 rounded-full transition" // No bg, no border
-                                >
-                                    <img
-                                        src="src/assets/ai-sparkle.png"
-                                        alt="Explain with AI"
-                                        className="h-5 w-5 filter invert" // Make the image white
-                                    />
-                                </button>
-
-                                {/* Tooltip */}
-                                <div className="absolute hidden group-hover:flex flex-col items-center top-full mt-1 right-1/2 translate-x-1/2 z-10">
-                                    <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
-                                        Explain with AI
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            {/* Card content below */}
-                            <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
-                            <h2 className="text-3xl font-bold mt-4">
-                                {card.value < 0 ? "-" : ""}{card.symbol}{Math.abs(card.value)}
-                            </h2>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Budget Table */}
-                {/* <div > */}
-                <BudgetTable
-                    transactions={transactionsThisMonth}
-                    budgets={budgets}
-                    setBudgets={setBudgets}
-                    updateCard={calculateCatsOverBudget}
-                    updateScore={calculateBudgeteerScore}
-                />
-                {/* </div> */}
 
                 {/* Graphs Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -474,18 +460,72 @@ const Overview = ({ transactions }) => {
                         <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
                     </div>
                 </div>
-
-                {/* AI Explanation Popup */}
-                {showAIexplain && (
-                    <AIExplanation
-                        response={AIexplanation}
-                        handleCloseCard={handleCloseCard}
-                    />
-                )}
-
             </div>
+
             {/* Right Column */}
             <div className="flex flex-col gap-8 lg:col-span-1">
+                {/* Card Section */}
+                <div className="flex flex-col gap-6">
+                    {cards.map((card) => (
+                        <div key={card.id} className="relative flex flex-col items-center text-center glass p-6">
+                            {/* Action Buttons in the top-right */}
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                {activeExplanation === card.title ? (
+                                    <>
+                                        <button
+                                            onClick={() => handleRefreshClick(card.title, card.promptContext)}
+                                            className="p-1 rounded-full transition hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            title="Refresh explanation"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveExplanation(null)}
+                                            className="p-1 rounded-full transition hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            title="Close explanation"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => handleExplainClick(card.title, card.promptContext)}
+                                        className="p-1 rounded-full transition hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        title="Explain with AI"
+                                    >
+                                        <img
+                                            src="src/assets/ai-sparkle.png"
+                                            alt="Explain with AI"
+                                            className="h-5 w-5 filter invert"
+                                        />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Card content */}
+                            <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
+                            <h2 className={`text-3xl font-bold mt-4 ${card.color}`}>
+                                {card.value < 0 ? "-" : ""}{card.symbol}{Math.abs(card.value)}
+                                {card.additionalDetail}
+                            </h2>
+
+                            {/* AI Explanation */}
+                            {activeExplanation === card.title && (
+                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-left">
+                                    {AIexplanation.title === card.title ? (
+                                        <p>{AIexplanation.explanation}</p>
+                                    ) : (
+                                        <p className="text-gray-500 dark:text-gray-400">Generating explanation...</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
 
                 {/* Budget Table */}
                 <div className="glass p-6">
@@ -497,17 +537,8 @@ const Overview = ({ transactions }) => {
                         updateScore={calculateBudgeteerScore}
                     />
                 </div>
-
-                {/* (Optional) You can put more widgets or graphs here later */}
-                {showAIexplain && (
-                    <AIExplanation
-                        response={AIexplanation}
-                        handleCloseCard={handleCloseCard}
-                    />
-                )}
             </div>
         </div>
-
     );
 };
 
