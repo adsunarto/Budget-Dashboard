@@ -159,8 +159,8 @@ const Overview = ({ transactions }) => {
 
     const [catsOverBudget, setCatsOverBudget] = useState(calculateCatsOverBudget);
     const [budgeteerScore, setBudgeteerScore] = useState(calculateBudgeteerScore());
-    const [AIexplanation, setAIexplanation] = useState({ "title": "", "explanation": "" });
-    const [showAIexplain, setShowAIexplain] = useState(false);
+    const [AIexplanations, setAIexplanations] = useState<Record<string, string>>({});
+    const [activeExplanations, setActiveExplanations] = useState<string[]>([]);
 
     useEffect(() => {
         setToLocalStorage("budgets", budgets);
@@ -352,14 +352,14 @@ const Overview = ({ transactions }) => {
 
     const fetchAIResponse = async (topic: string, context: string[]) => {
         const promptParts = [
-            "You are an assistant that helps with budgeting. Your goal is to provide helpful, clear explanations.",
-            "Limit your response to a short paragraph of a few sentences (with no markdown and no emojis), using only the information provided.",
-            "Be direct with your response, don't say things like 'Based on x' or 'According to'.",
-            "Act as if everyone knows what the value is, don't say 'It looks like' or 'I'm reporting a value of x'.",
-            "Do not thank me. Do not ask me if I have any other questions. Do not use numbers or bullet points to list things.",
-            "If there are easy improvements, explain how I might be able to improve the score.",
-            `Explain the reasoning behind my score for ${topic} given the following data: ${JSON.stringify(userDataRef.current)}.`,
-            "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets.",
+            "You are an assistant that helps with budgeting. Your goal is to provide extremely brief, focused explanations.",
+            "Limit your response to exactly 1-2 sentences, focusing only on the most important reason for the value.",
+            "Do not use any markdown, emojis, or formatting.",
+            "Be direct and concise. Do not use phrases like 'Based on', 'According to', or 'It looks like'.",
+            "Do not thank me or ask if I have questions.",
+            "Do not use numbers or bullet points.",
+            "For budget-related explanations, only consider a category over budget if the absolute amount spent exceeds the budgeted amount.",
+            `Explain the most important reason for my ${topic} value in 1-2 sentences, using this data: ${JSON.stringify(userDataRef.current)}.`,
         ];
         promptParts.push.apply(promptParts, context);
         try {
@@ -392,25 +392,23 @@ const Overview = ({ transactions }) => {
                 try {
                     const currentResponse = decoder.decode(value);
                     cleanResponse += JSON.parse(currentResponse).response;
-                    setAIexplanation({ "title": topic, "explanation": cleanResponse })
+                    setAIexplanations(prev => ({ ...prev, [topic]: cleanResponse }));
                 } catch (parseError) {
                     console.error("Error processing the response chunk:", parseError);
                 }
             }
         } catch (error) {
             console.error("Fetch error or response handling error:", error);
-            setAIexplanation({ "title": "Error: ollama not running.", "explanation": "Error retrieving response. Make sure the ollama service is running: `ollama serve`." })
+            setAIexplanations(prev => ({ ...prev, [topic]: "Error retrieving response. Make sure the ollama service is running: `ollama serve`." }));
         }
     };
 
-    const [activeExplanation, setActiveExplanation] = useState<string | null>(null);
-
     const handleExplainClick = async (topic: string, context: string[]) => {
-        if (activeExplanation === topic) {
-            setActiveExplanation(null);
+        if (activeExplanations.includes(topic)) {
+            setActiveExplanations(activeExplanations.filter(t => t !== topic));
             return;
         }
-        setActiveExplanation(topic);
+        setActiveExplanations([...activeExplanations, topic]);
         await fetchAIResponse(topic, context);
     };
 
@@ -470,7 +468,7 @@ const Overview = ({ transactions }) => {
                         <div key={card.id} className="relative flex flex-col items-center text-center glass p-6">
                             {/* Action Buttons in the top-right */}
                             <div className="absolute top-4 right-4 flex gap-2">
-                                {activeExplanation === card.title ? (
+                                {activeExplanations.includes(card.title) ? (
                                     <>
                                         <button
                                             onClick={() => handleRefreshClick(card.title, card.promptContext)}
@@ -482,7 +480,7 @@ const Overview = ({ transactions }) => {
                                             </svg>
                                         </button>
                                         <button
-                                            onClick={() => setActiveExplanation(null)}
+                                            onClick={() => setActiveExplanations(activeExplanations.filter(t => t !== card.title))}
                                             className="p-1 rounded-full transition hover:bg-gray-100 dark:hover:bg-gray-700"
                                             title="Close explanation"
                                         >
@@ -514,12 +512,12 @@ const Overview = ({ transactions }) => {
                             </h2>
 
                             {/* AI Explanation */}
-                            {activeExplanation === card.title && (
-                                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-left">
-                                    {AIexplanation.title === card.title ? (
-                                        <p>{AIexplanation.explanation}</p>
+                            {activeExplanations.includes(card.title) && (
+                                <div className="mt-4 p-4 bg-muted rounded-lg text-sm text-left">
+                                    {AIexplanations[card.title] ? (
+                                        <p>{AIexplanations[card.title]}</p>
                                     ) : (
-                                        <p className="text-gray-500 dark:text-gray-400">Generating explanation...</p>
+                                        <p className="text-muted-foreground">Generating explanation...</p>
                                     )}
                                 </div>
                             )}

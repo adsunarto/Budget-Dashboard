@@ -80,7 +80,7 @@ const MoneyTrends = ({ transactions }: Props) => {
     // Filter and aggregate transactions for the current date range
     const chartData = useMemo(() => {
         const labels: string[] = [];
-        const datasets: Record<string, number[]> = {};
+        const dailyTotals: number[] = new Array(dateRange.days).fill(0);
         
         // Initialize date iterator and labels
         const currentDate = new Date(dateRange.start);
@@ -89,14 +89,7 @@ const MoneyTrends = ({ transactions }: Props) => {
             dateRange.increment(currentDate);
         }
 
-        // Initialize datasets with zeros
-        transactions.forEach(tx => {
-            if (!datasets[tx.tag]) {
-                datasets[tx.tag] = new Array(dateRange.days).fill(0);
-            }
-        });
-
-        // Aggregate transactions within date range
+        // Aggregate all transactions within date range
         transactions.forEach(tx => {
             const txDate = new Date(tx.date);
             if (txDate >= dateRange.start && txDate <= dateRange.end) {
@@ -105,26 +98,20 @@ const MoneyTrends = ({ transactions }: Props) => {
                     : Math.floor((txDate.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
                 
                 if (index >= 0 && index < dateRange.days) {
-                    if (!datasets[tx.tag]) {
-                        datasets[tx.tag] = new Array(dateRange.days).fill(0); 
-                    }
-                    datasets[tx.tag][index] += tx.amount*(-1);
+                    dailyTotals[index] += Math.abs(tx.amount);
                 }
             }
         });
 
-        // Then in your chartDatasets mapping, replace getRandomShades() with:
-        const chartDatasets = Object.entries(datasets).map(([tag, data]) => ({
-            label: tag,
-            data,
-            fill: false,
-            borderColor: getColorForCategory(tag), // Use consistent color per category
-            tension: 0.4,
-        }));
-
         return {
             labels,
-            datasets: chartDatasets,
+            datasets: [{
+                label: 'Total Spending',
+                data: dailyTotals,
+                fill: false,
+                borderColor: '#3B82F6', // Blue color for the line
+                tension: 0.4,
+            }],
         };
     }, [transactions, timeRange, dateRange]);
 
@@ -163,33 +150,23 @@ const MoneyTrends = ({ transactions }: Props) => {
                         plugins: {
                             title: {
                                 display: true,
-                                text: `${timeRange === 'week' ? 'This Week' : timeRange === 'month' ? format(new Date(), 'MMMM yyyy') : format(new Date(), 'yyyy')}`,
-
-                                // text: `Spending Trends (${timeRange === 'week' ? 'This Week' : timeRange === 'month' ? 'This Month' : 'This Year'})`,
+                                text: 'Daily Spending',
                                 font: {
                                     size: 18,
                                     family: "'Poppins', sans-serif",
-                                    weight: '600',
+                                    weight: 'bold',
                                 },
                                 padding: {
                                     bottom: 20,
                                 },
                             },
                             legend: {
-                                labels: {
-                                    font: {
-                                        family: "'Poppins', sans-serif",
-                                        size: 12,
-                                        weight: '500',
-                                    },
-                                    padding: 20,
-                                    usePointStyle: true,
-                                },
+                                display: false
                             },
                             tooltip: {
                                 callbacks: {
                                     label: (tooltipItem) => {
-                                        return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
+                                        return `Total: $${tooltipItem.raw.toFixed(2)}`;
                                     },
                                 },
                                 titleFont: {
@@ -204,7 +181,6 @@ const MoneyTrends = ({ transactions }: Props) => {
                             x: {
                                 grid: {
                                     display: false,
-                                    drawBorder: false,
                                 },
                                 ticks: {
                                     font: {
@@ -216,14 +192,13 @@ const MoneyTrends = ({ transactions }: Props) => {
                             y: {
                                 grid: {
                                     display: false,
-                                    drawBorder: false,
                                 },
                                 title: {
                                     display: true,
-                                    text: 'Amount ($)',
+                                    text: 'Total Amount ($)',
                                     font: {
                                         family: "'Poppins', sans-serif",
-                                        weight: '500',
+                                        weight: 'normal',
                                     },
                                 },
                                 ticks: {
