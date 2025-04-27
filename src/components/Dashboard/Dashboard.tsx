@@ -5,6 +5,9 @@ import Overview from "@/components/Overview/Overview";
 import Activity from "@/components/Activity/Activity";
 import Plan from "@/components/Plan/Plan";
 import Compare from "@/components/Compare/Compare";
+import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
+
 
 const transactions = [
   { id: 1, date: "1/05/2025", tag: "Food", name: "Starbucks", amount: -13.50 },
@@ -105,15 +108,33 @@ export default function Dashboard() {
   const CurrentComponent = tabs.find((tab) => tab.name === activeTab)?.component;
 
   return (
-    <div className="flex h-screen bg-muted">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       {/* Sidebar */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto">{CurrentComponent}</div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-gradient-to-b from-background via-background/80 to-background/60">
+        {/* Top Header */}
+        <div className="flex items-center justify-between mb-6">
+          {/* Left: Welcome Text */}
+          <h3 className="text-3xl font-bold tracking-tight">
+          {activeTab === "Overview" ? "Welcome back, Andrew!" : activeTab}
+          </h3>
+
+          {/* Right: View Insights Button */}
+          <Button className="flex items-center space-x-2 bg-white text-black border border-gray-300 hover:bg-gray-100">            <Sparkles className="h-4 w-4" />
+            <span>View Latest Insights</span>
+          </Button>
+        </div>
+
+        {/* Main Card Area */}
+        <div className="grid grid-cols-1 gap-8 animate-fade-in">
+          {CurrentComponent}
+        </div>
+      </div>
     </div>
   );
 }

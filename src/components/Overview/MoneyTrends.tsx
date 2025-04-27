@@ -19,8 +19,8 @@ type Props = {
 
 const formatMonthYear = (dateObj) => {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return `${months[dateObj.getMonth()]} ${dateObj.getFullYear().toString().slice(-2)}`;
 };
@@ -85,116 +85,124 @@ const MoneyTrends = ({ transactions }: Props) => {
     }, [categoryTrends]);
 
     return (
-        <div className="flex h-[50vh]">  {/* Full height container with flexbox */}
-            <div className="flex flex-col justify-end h-full w-[50vw] overflow-hidden">
-
+        <div className="w-full h-[400px] relative">
             <Line
                 data={chartData}
                 options={{
+                    maintainAspectRatio: false,
                     responsive: true,
                     elements: {
                     },
                     plugins: {
-                    title: {
-                        display: true,
-                        text: "Spending Trends by Category",
-                        font: {
-                        size: 18,
-                        family: "'Poppins', sans-serif",
-                        weight: '600',
+                        title: {
+                            color: '#ffffff', // white legend text
+                            display: true,
+                            text: "Spending Trends by Category",
+                            font: {
+                                size: 18,
+                                family: "'Poppins', sans-serif",
+                                weight: '600',
+                            },
+                            padding: {
+                                bottom: 20,
+                            },
                         },
-                        padding: {
-                        bottom: 20,
+                        legend: {
+                            labels: {
+                                color: '#ffffff', // white legend text
+                                font: {
+                                    family: "'Poppins', sans-serif",
+                                    size: 12,
+                                    weight: '500',
+                                },
+                                padding: 20,
+                                usePointStyle: true, // Nicer legend item markers
+                            },
                         },
-                    },
-                    legend: {
-                        labels: {
-                        font: {
-                            family: "'Poppins', sans-serif",
-                            size: 12,
-                            weight: '500',
+                        tooltip: {
+                            backgroundColor: '#333333', // darker background for tooltip
+                            titleColor: '#ffffff', // white tooltip title
+                            bodyColor: '#ffffff', // white tooltip body text
+                            callbacks: {
+                                label: (tooltipItem) => {
+                                    return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
+                                },
+                            },
+                            titleFont: {
+                                family: "'Poppins', sans-serif",
+                            },
+                            bodyFont: {
+                                family: "'Poppins', sans-serif",
+                            },
                         },
-                        padding: 20,
-                        usePointStyle: true, // Nicer legend item markers
-                        },
-                    },
-                    tooltip: {
-                        callbacks: {
-                        label: (tooltipItem) => {
-                            return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
-                        },
-                        },
-                        titleFont: {
-                        family: "'Poppins', sans-serif",
-                        },
-                        bodyFont: {
-                        family: "'Poppins', sans-serif",
-                        },
-                    },
                     },
                     scales: {
-                    x: {
-                        grid: {
-                        display: false, // Remove vertical grid lines
-                        drawBorder: false, // Optional: remove axis line
+                        x: {
+                            ticks: {
+                                color: '#ffffff', // white font for x-axis
+                                font: {
+                                    family: "'Poppins', sans-serif",
+                                },
+                            },
+                            grid: {
+                                display: false, // Remove vertical grid lines
+                                drawBorder: false, // Optional: remove axis line
+                            },
+                            title: {
+                                display: true,
+                                // text: 'Month-Year',
+                                font: {
+                                    family: "'Poppins', sans-serif",
+                                    weight: '500',
+                                },
+                            }
                         },
-                        title: {
-                        display: true,
-                        // text: 'Month-Year',
-                        font: {
-                            family: "'Poppins', sans-serif",
-                            weight: '500',
+                        y: {
+                            grid: {
+                                display: false, // Remove horizontal grid lines
+                                drawBorder: false, // Optional: remove axis line
+                            },
+                            title: {
+                                display: true,
+                                text: 'Change in Amount ($)',
+                                font: {
+                                    family: "'Poppins', sans-serif",
+                                    weight: '500',
+                                },
+                                color: '#ffffff', // white title for y-axis
+                            },
+                            ticks: {
+                                color: '#ffffff', // white font for x-axis
+                                font: {
+                                    family: "'Poppins', sans-serif",
+                                },
+                            },
+                            beginAtZero: true,
                         },
-                        },
-                        ticks: {
-                        font: {
-                            family: "'Poppins', sans-serif",
-                        },
-                        },
-                    },
-                    y: {
-                        grid: {
-                        display: false, // Remove horizontal grid lines
-                        drawBorder: false, // Optional: remove axis line
-                        },
-                        title: {
-                        display: true,
-                        text: 'Change in Amount ($)',
-                        font: {
-                            family: "'Poppins', sans-serif",
-                            weight: '500',
-                        },
-                        },
-                        ticks: {
-                        font: {
-                            family: "'Poppins', sans-serif",
-                        },
-                        },
-                        beginAtZero: true,
-                    },
                     },
                 }}
-                />
-            </div>
+            />
         </div>
     );
 };
 
 // Helper function to generate random green shades
 const getRandomShades = () => {
-
-    const randomShades = [
-        '#1b5af8', // Darker blue
-        '#61bdff',  // Lighter blue
-        '#abe394',
-        '#136b38'
-      ];
-    
-    return randomShades[Math.floor(Math.random() * randomShades.length)];
-    
-    // Alternative with opacity for softer look:
-    // return `rgba(${red}, ${green}, ${blue}, 0.8)`;
-};
+    const colors = [
+      '#3B82F6', // Blue-500 (Bright blue)
+      '#60A5FA', // Blue-400 (Lighter blue)
+      '#22D3EE', // Cyan-400 (Bright teal)
+      '#06B6D4', // Cyan-500 (Stronger teal)
+      '#4ADE80', // Green-400 (Bright green)
+      '#22C55E', // Green-500 (Deeper green)
+      '#A78BFA', // Purple-400 (Bright purple)
+      '#8B5CF6', // Purple-500 (Stronger purple)
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+  
+  
+  
 
 export default MoneyTrends;
 

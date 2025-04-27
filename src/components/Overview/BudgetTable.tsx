@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils"; // optional, if you want cleaner className handling (tailwind merge helper)
+
 type Transaction = {
   id: number;
   date: string;
@@ -44,20 +46,24 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
 
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-background shadow-sm">
       <table className="min-w-full text-sm text-left">
-        <thead className="bg-gray-200">
+        <thead className="bg-muted">
           <tr>
-            <th className="p-3 font-medium text-gray-700">Category</th>
-            <th className="p-3 font-medium text-gray-700">Budget</th>
-            <th className="p-3 font-medium text-gray-700">Amount Spent</th>
+            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Category</th>
+            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Budget</th>
+            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Amount Spent</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-border">
           {categories.map((tx) => (
-            <tr key={tx.category} className="border-t hover:bg-gray-50">
-              <td className="p-3 text-gray-800">{tx.category}</td>
-              <td className="p-3 text-gray-800">$
+            <tr
+              key={tx.category}
+              className="hover:bg-muted/40 transition"
+            >
+              <td className="p-4 text-foreground font-medium">{tx.category}</td>
+              <td className="p-4 text-foreground">
+                $
                 <input
                   type="number"
                   onChange={(e) => {
@@ -76,26 +82,21 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
                     budgets.find((b) => b.category === tx.category)?.budgeted.toString() || ""
                   }
                   placeholder="0"
-                  className="w-24 bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400"
+                  className="w-24 bg-transparent border-b border-border focus:outline-none focus:border-primary transition"
                 />
               </td>
-              {tx.spent < 0 ? (
-                <td className="p-3 text-red-400">
-                  -$
-                  {Math.abs(tx.spent).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
-              ) : (
-                <td className="p-3 text-green-600">
-                  +$
-                  {Math.abs(tx.spent).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
-              )}
+              <td
+                className={cn(
+                  "p-4 font-semibold",
+                  tx.spent < 0 ? "text-red-400" : "text-green-400"
+                )}
+              >
+                {tx.spent < 0 ? "-" : "+"}$
+                {Math.abs(tx.spent).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </td>
             </tr>
           ))}
         </tbody>

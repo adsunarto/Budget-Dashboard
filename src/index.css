@@ -213,7 +213,7 @@ button:focus-visible {
   }
   
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground min-h-screen;
   }
 
   /* Optional: Set font weights for headings if needed */
@@ -223,5 +223,19 @@ button:focus-visible {
   
   button, input, textarea {
     font-family: 'Poppins', sans-serif; /* Explicitly set for form elements */
+  }
+}
+
+@layer components {
+  /* .card {
+    @apply bg-card text-card-foreground rounded-2xl shadow-lg p-6 backdrop-blur-md border border-border;
+  } */
+  
+  .glass {
+    @apply bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-xl;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-primary-foreground font-medium py-2 px-4 rounded-lg transition hover:bg-primary-foreground hover:text-primary;
   }
 }

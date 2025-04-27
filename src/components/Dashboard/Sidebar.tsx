@@ -27,6 +27,13 @@ import {
     SelectItem,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { LayoutDashboard, Activity, Calendar, BarChart3 } from "lucide-react";
+const tabs = [
+    { label: "Overview", icon: LayoutDashboard },
+    { label: "Activity", icon: Activity },
+    { label: "Plan", icon: Calendar },
+    { label: "Compare", icon: BarChart3 },
+];
 
 type SidebarProps = {
     activeTab: string;
@@ -140,56 +147,64 @@ const Sidebar = ({
     ];
 
     return (
-        <div className="w-64 bg-[#3F466E] border-r p-4 space-y-6 h-screen overflow-y-auto overflow-x-hidden">
-            <div className="w-64 bg-[#3F466E] border-r p-4 space-y-6 sidebar">
-                <h1 style={{ fontFamily: 'lobster' }} className="text-white">Budgeteer</h1>
-                <div className="h-px bg-[#475598] w-full -mx-4" />
-                {/* Sidebar Tabs */}
-                <div className="space-y-2 pt-4">
-                    {["Overview", "Activity", "Plan", "Compare"].map((tab) => {
-                        const isActive = activeTab === tab;
+        <div className="w-64 bg-background border-r border-border p-6 space-y-6 h-screen overflow-y-auto">
+            <h5 className="text-2xl font-bold tracking-tight text-primary">Budgeteer</h5>
 
-                        return (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`w-full text-left px-4 py-2 rounded-md transition-colors duration-200 ${isActive ? "bg-[#475598] font-semibold text-white" : "hover:bg-[#475598]/50 text-white/90"} -mx-4`}
-                                aria-current={isActive ? "page" : undefined}
-                            >
-                                {tab}
-                            </button>
-                        );
-                    })}
-                </div>
+            <div className="h-px bg-border my-4" />
 
-                {/* Expandable Account Section */}
+            {/* Sidebar Tabs */}
+            <div className="space-y-1">
+                {tabs.map(({ label, icon: Icon }) => {
+                    const isActive = activeTab === label;
+
+                    return (
+                        <button
+                            key={label}
+                            onClick={() => setActiveTab(label)}
+                            className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg text-sm font-medium transition ${isActive
+                                    ? "bg-primary/20 text-primary"
+                                    : "hover:bg-muted text-muted-foreground"
+                                }`}
+                            aria-current={isActive ? "page" : undefined}
+                        >
+                            <Icon className="h-5 w-5" />
+                            {label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Financial Sections */}
+            <div className="space-y-4">
                 {financialSections.map(({ key, data }) => {
                     const isOpen = showSections[key];
 
                     return (
-                        <div key={key} className="pt-2">
+                        <div key={key}>
                             <button
                                 onClick={() => setShowSections((prev) => ({ ...prev, [key]: !isOpen }))}
-                                className="w-full flex items-center justify-between text-left text-sm font-medium text-white/90 hover:text-white transition"
-                                aria-expanded={isOpen}
+                                className="w-full flex items-center justify-between text-left text-sm font-semibold text-muted-foreground hover:text-foreground transition"
                             >
                                 <div className="flex items-center gap-2">
                                     {isOpen ? (
-                                        <ChevronUp className="w-4 h-4" />
+                                        <ChevronUp className="h-4 w-4" />
                                     ) : (
-                                        <ChevronDown className="w-4 h-4" />
+                                        <ChevronDown className="h-4 w-4" />
                                     )}
-                                    <span>{key}</span>
+                                    {key}
                                 </div>
                             </button>
 
                             {isOpen && (
-                                <ul className="mt-2 space-y-1 pl-2 text-sm text-white">
+                                <ul className="mt-2 space-y-2 pl-2">
                                     {data.map((item) => (
-                                        <li key={item.name} className="flex items-center justify-between pr-1 mb-4">
+                                        <li
+                                            key={item.name}
+                                            className="flex items-center justify-between px-2 py-1 text-sm rounded-md hover:bg-muted/50 transition"
+                                        >
                                             <div className="flex flex-col">
-                                                <span className="font-medium">{item.name}</span>
-                                                <span className="text-xs text-gray-200">
+                                                <span className="text-foreground font-medium">{item.name}</span>
+                                                <span className="text-xs text-muted-foreground">
                                                     {item.type === "Loan" ? "-" : ""}
                                                     ${Math.abs(item.balance).toLocaleString(undefined, {
                                                         minimumFractionDigits: 2,
@@ -198,17 +213,17 @@ const Sidebar = ({
                                                 </span>
                                             </div>
 
-                                            {/* Dropdown menu */}
+                                            {/* Dropdown */}
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <button className="text-white hover:text-gray-300 p-1">
+                                                    <button className="text-muted-foreground hover:text-foreground p-1">
                                                         <MoreVertical className="w-4 h-4" />
                                                     </button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-white text-sm text-gray-800 rounded shadow-md">
+                                                <DropdownMenuContent align="end" className="bg-background border border-border">
                                                     <DropdownMenuItem
                                                         onClick={() => handleDelete(key, item.name)}
-                                                        className="cursor-pointer hover:bg-gray-100"
+                                                        className="cursor-pointer hover:bg-muted"
                                                     >
                                                         Remove
                                                     </DropdownMenuItem>
@@ -221,65 +236,67 @@ const Sidebar = ({
                         </div>
                     );
                 })}
+            </div>
 
-                {/* Add Account */}
-                <div className="flex justify-center -mx-4">
-                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                        <DialogTrigger asChild>
-                            <div className="flex -ml-8">
-                                <Button variant="outline" className="flex justify-center w-[100%] text-left bg-[#475598] text-white">Add Account</Button>
+            {/* Add Account Button */}
+            <div className="pt-6">
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="w-full" variant="secondary">
+                            Add Account
+                        </Button>
+                    </DialogTrigger>
+
+                    <DialogContent className="bg-background border border-border">
+                        <DialogHeader>
+                            <DialogTitle>Add New Account</DialogTitle>
+                        </DialogHeader>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-foreground">Type</label>
+                                <Select value={accountType} onValueChange={setAccountType}>
+                                    <SelectTrigger className="w-full mt-1">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Account">Account</SelectItem>
+                                        <SelectItem value="Loan">Loan</SelectItem>
+                                        <SelectItem value="Investment">Investment</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                        </DialogTrigger>
 
-                        <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                                <DialogTitle>Add New Account</DialogTitle>
-                            </DialogHeader>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground">Name</label>
+                                <input
+                                    type="text"
+                                    value={entryName}
+                                    onChange={(e) => setEntryName(e.target.value)}
+                                    placeholder="e.g. Checking, Car Loan"
+                                    className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                                />
+                            </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-white">Type</label>
-                                    <Select value={accountType} onValueChange={setAccountType}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select type" />
-                                        </SelectTrigger>
-                                        <SelectContent className="w-full mt-1 border border-white rounded-md px-3 py-2 text-sm">
-                                            <SelectItem value="Account">Account</SelectItem>
-                                            <SelectItem value="Loan">Loan</SelectItem>
-                                            <SelectItem value="Investment">Investment</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-foreground">Balance</label>
+                                <input
+                                    type="number"
+                                    value={accountBalance}
+                                    onChange={(e) => setAccountBalance(parseFloat(e.target.value))}
+                                    placeholder="e.g. 15000"
+                                    className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                                />
+                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-white">Name</label>
-                                    <input
-                                        type="text"
-                                        value={entryName}
-                                        onChange={(e) => setEntryName(e.target.value)}
-                                        placeholder="e.g. Checking, Car Loan"
-                                        className="w-full mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-white">Balance</label>
-                                    <input
-                                        type="number"
-                                        value={accountBalance}
-                                        onChange={(e) => setAccountBalance(parseFloat(e.target.value))}
-                                        placeholder="e.g. 15000"
-                                        className="w-full mt-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
-                                    />
-                                </div>
-
-                                <DialogFooter>
-                                    <Button type="submit" className="bg-[#3F466E]">Save</Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                            <DialogFooter>
+                                <Button type="submit" className="w-full">
+                                    Save
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );

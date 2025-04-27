@@ -6,6 +6,7 @@ import AIExplanation from "@/components/Overview/AIExplanation";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
 import MoneyTrends from "./MoneyTrends";
 import GaugeComponent from 'react-gauge-component';
+import Header from "@/components/Dashboard/Header"; // Add this import at the top
 
 import LineChart from "./LineChart";
 
@@ -308,70 +309,187 @@ const Overview = ({ transactions, assets }) => {
         setShowAIexplain(false);
     };
 
-    return (
-        <>
-            {/* Card Container */}
-            <div className="flex justify-center" style={{ gap: "10px" }}>
-                {cards.map(card => (
-                    // Cards
-                    <div id={card.id} className="relative flex bg-white shadow-lg rounded-lg w-[400px] h-[200px] m-4 flex-col justify-center items-center text-lg text-center">
-                        {/* Button in top-right */}
-                        <button id={card["ai-explain-id"]} className="group absolute top-2 right-2" onClick={() => handleExplainClick(card.title, card.promptContext)}>
-                            <img className="icon h-4 w-4" src="src/assets/ai-sparkle.png" alt="Explain with AI" />
+    // return (
+    //     <>
+    //         {/* Card Container */}
+    //         <div className="flex justify-center" style={{ gap: "10px" }}>
+    //             {cards.map(card => (
+    //                 // Cards
+    //                 <div id={card.id} className="relative flex bg-white shadow-lg rounded-lg w-[400px] h-[200px] m-4 flex-col justify-center items-center text-lg text-center">
+    //                     {/* Button in top-right */}
+    //                     <button id={card["ai-explain-id"]} className="group absolute top-2 right-2" onClick={() => handleExplainClick(card.title, card.promptContext)}>
+    //                         <img className="icon h-4 w-4" src="src/assets/ai-sparkle.png" alt="Explain with AI" />
 
-                            {/* Tooltip below the icon */}
-                            <div className="absolute hidden group-hover:flex flex-col items-center top-full mt-1 left-1/2 -translate-x-1/2 z-10">
-                                <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
-                                    Explain with AI
+    //                         {/* Tooltip below the icon */}
+    //                         <div className="absolute hidden group-hover:flex flex-col items-center top-full mt-1 left-1/2 -translate-x-1/2 z-10">
+    //                             <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
+    //                                 Explain with AI
+    //                             </div>
+    //                         </div>
+    //                     </button>
+
+    //                     <div className="flex flex-col items-center mt-6">
+    //                         {/* Title */}
+    //                         <h3 className="text-gray-700 font-medium">{card.title}</h3>
+
+    //                         {/* Value */}
+    //                         <h2 className={card.color}>
+    //                             {card.id === "credit-score" ? (
+    //                                 <div className="w-[150px] h-[150px] mt-0">
+    //                                     <GaugeComponent
+    //                                         type="radial"
+    //                                         value={50}
+    //                                         minValue={0}
+    //                                         maxValue={100}
+    //                                     />
+    //                                 </div>
+    //                             ) : (
+    //                                 <>
+    //                                     {card.value < 0 ? "-" : ""}{card.valueSymbol}{Math.abs(card.value)}{card.additionalDetail}
+    //                                 </>
+    //                             )}
+    //                         </h2>
+    //                     </div>
+    //                 </div>
+    //             ))}
+    //         </div>
+
+    //         {/* AI Explanation */}
+    //         {showAIexplain && (
+    //             <AIExplanation
+    //                 response={AIexplanation}
+    //                 handleCloseCard={handleCloseCard}
+    //             />
+    //         )}
+
+    //         {/* Budget Table Component */}
+    //         <BudgetTable transactions={transactionsThisMonth} budgets={budgets} setBudgets={setBudgets} updateCard={calculateCatsOverBudget} updateScore={calculateBudgeteerScore} />
+
+    //         <div className="flex">
+    //             {/* Line Graph Component */}
+    //             <MoneyTrends transactions={transactionsMinusPaycheck} />
+
+    //             {/* Bar Graph Component */}
+    //             <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
+    //         </div>
+    //     </>
+    // );
+
+    return (
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+
+            {/* Left Column */}
+            <div className="flex flex-col gap-8 lg:col-span-2">
+            <div className="glass p-6">
+                    <MoneyTrends transactions={transactionsMinusPaycheck} />
+                </div>
+
+
+                {/* Card Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {cards.map((card) => (
+
+                        <div key={card.id} className="relative flex flex-col items-center text-center glass p-6">
+
+                            {/* AI Button in the top-right */}
+                            <div className="absolute top-4 right-4 group">
+                                <button
+                                    onClick={() => handleExplainClick(card.title, [])}
+                                    className="p-1 rounded-full transition" // No bg, no border
+                                >
+                                    <img
+                                        src="src/assets/ai-sparkle.png"
+                                        alt="Explain with AI"
+                                        className="h-5 w-5 filter invert" // Make the image white
+                                    />
+                                </button>
+
+                                {/* Tooltip */}
+                                <div className="absolute hidden group-hover:flex flex-col items-center top-full mt-1 right-1/2 translate-x-1/2 z-10">
+                                    <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
+                                        Explain with AI
+                                    </div>
                                 </div>
                             </div>
-                        </button>
 
-                        <div className="flex flex-col items-center mt-6">
-                            {/* Title */}
-                            <h3 className="text-gray-700 font-medium">{card.title}</h3>
 
-                            {/* Value */}
-                            <h2 className={card.color}>
-                                {card.id === "credit-score" ? (
-                                    <div className="w-[150px] h-[150px] mt-0">
-                                        <GaugeComponent
-                                            type="radial"
-                                            value={50}
-                                            minValue={0}
-                                            maxValue={100}
-                                        />
-                                    </div>
-                                ) : (
-                                    <>
-                                        {card.value < 0 ? "-" : ""}{card.valueSymbol}{Math.abs(card.value)}{card.additionalDetail}
-                                    </>
-                                )}
-                            </h2>
+                            {/* Card content below */}
+                            <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
+
+                            {card.id === "budgeteer-score" ? (
+                                <div className="w-32 h-32 mt-2">
+                                    <GaugeComponent
+                                        type="radial"
+                                        value={Math.min(100, (card.value - 300) / 5.5)}
+                                        minValue={0}
+                                        maxValue={100}
+                                    />
+                                </div>
+                            ) : (
+                                <h2 className="text-3xl font-bold mt-4">
+                                    {card.value < 0 ? "-" : ""}{card.symbol}{Math.abs(card.value)}
+                                </h2>
+                            )}
+
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
 
-            {/* AI Explanation */}
-            {showAIexplain && (
-                <AIExplanation
-                    response={AIexplanation}
-                    handleCloseCard={handleCloseCard}
+                {/* Budget Table */}
+                {/* <div > */}
+                <BudgetTable
+                    transactions={transactionsThisMonth}
+                    budgets={budgets}
+                    setBudgets={setBudgets}
+                    updateCard={calculateCatsOverBudget}
+                    updateScore={calculateBudgeteerScore}
                 />
-            )}
+                {/* </div> */}
 
-            {/* Budget Table Component */}
-            <BudgetTable transactions={transactionsThisMonth} budgets={budgets} setBudgets={setBudgets} updateCard={calculateCatsOverBudget} updateScore={calculateBudgeteerScore} />
+                {/* Graphs Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass p-6">
+                        <MoneyTrends transactions={transactionsMinusPaycheck} />
+                    </div>
 
-            <div className="flex">
-                {/* Line Graph Component */}
-                <MoneyTrends transactions={transactionsMinusPaycheck} />
+                    <div className="glass p-6">
+                        <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
+                    </div>
+                </div>
 
-                {/* Bar Graph Component */}
-                <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
+                {/* AI Explanation Popup */}
+                {showAIexplain && (
+                    <AIExplanation
+                        response={AIexplanation}
+                        handleCloseCard={handleCloseCard}
+                    />
+                )}
+
             </div>
-        </>
+            {/* Right Column */}
+            <div className="flex flex-col gap-8 lg:col-span-1">
+
+                {/* Budget Table */}
+                <div className="glass p-6">
+                    <BudgetTable
+                        transactions={transactionsThisMonth}
+                        budgets={budgets}
+                        setBudgets={setBudgets}
+                        updateCard={calculateCatsOverBudget}
+                        updateScore={calculateBudgeteerScore}
+                    />
+                </div>
+
+                {/* (Optional) You can put more widgets or graphs here later */}
+                {showAIexplain && (
+                    <AIExplanation
+                        response={AIexplanation}
+                        handleCloseCard={handleCloseCard}
+                    />
+                )}
+            </div>
+        </div>
+
     );
 };
 
