@@ -5,6 +5,7 @@ import VerticalBarChart from "@/components/Overview/VerticalBarChart";
 import AIExplanation from "@/components/Overview/AIExplanation";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
 import MoneyTrends from "./MoneyTrends";
+import GaugeComponent from 'react-gauge-component';
 
 import LineChart from "./LineChart";
 
@@ -66,13 +67,16 @@ const Overview = ({ transactions, assets }) => {
     }
 
     const [netSavings] = useState(calculateNetSavings);
+
     const defaultBudgets: Budget[] = Array.from(
-        transactionsThisMonth.reduce((map, tx) => {
-            const current = map.get(tx.tag) || { budgeted: 0, amountSpent: 0 };
-            current.amountSpent += tx.amount;
-            map.set(tx.tag, current);
-            return map;
-        }, new Map())
+        transactionsThisMonth
+            .filter(tx => tx.tag !== "Income")
+            .reduce((map, tx) => {
+                const current = map.get(tx.tag) || { budgeted: 0, amountSpent: 0 };
+                current.amountSpent += tx.amount;
+                map.set(tx.tag, current);
+                return map;
+            }, new Map())
     ).map(([category, data]) => ({
         category,
         budgeted: 0,
@@ -211,7 +215,8 @@ const Overview = ({ transactions, assets }) => {
             "color": getOverBudgetColor(catsOverBudget),
             "additionalDetail": "",
             "promptContext": [
-                "Tell me which categories are over budget and why."
+                "Tell me which categories are over budget and why.",
+                "Only if the absolute amount spent is greater than the budget, the category is over budget.",
             ]
         },
         {
@@ -247,13 +252,8 @@ const Overview = ({ transactions, assets }) => {
             "Act as if everyone knows what the value is, don't say 'It looks like' or 'I'm reporting a value of x'.",
             "Do not thank me. Do not ask me if I have any other questions. Do not use numbers or bullet points to list things.",
             "If there are easy improvements, explain how I might be able to improve the score.",
-            // "The lowest Budgeteer Score is 300 and the highest Budgeteer Score is 850.",
-            // "A negative net earnings correlates to a lower Budgeteer Score",
-            // "More categories over budget correlates to a lower Budgeteer Score",
-            // "Regarding budgets and spending, a negative spend means the user spent that amount. If the absolute value of the amount spent is less than the budget, the user is not overbudget. If the absolute value of the amount spent is greater than the budget, the user is overbudget.",
             `Explain the reasoning behind my score for ${topic} given the following data: ${JSON.stringify(userData)}.`,
-            // "If the category to explain is affected by any transactions or budgets, enlighten the user to the data.",
-            // "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets."
+            "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets.",
         ];
         promptParts.push.apply(promptParts, context);
         try {
@@ -333,7 +333,20 @@ const Overview = ({ transactions, assets }) => {
 
                             {/* Value */}
                             <h2 className={card.color}>
-                                {card.value < 0 ? "-" : ""}{card.valueSymbol}{Math.abs(card.value)}{card.additionalDetail}
+                                {card.id === "credit-score" ? (
+                                    <div className="w-[150px] h-[150px] mt-0">
+                                        <GaugeComponent
+                                            type="radial"
+                                            value={50}
+                                            minValue={0}
+                                            maxValue={100}
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
+                                        {card.value < 0 ? "-" : ""}{card.valueSymbol}{Math.abs(card.value)}{card.additionalDetail}
+                                    </>
+                                )}
                             </h2>
                         </div>
                     </div>
