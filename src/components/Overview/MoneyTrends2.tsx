@@ -92,6 +92,11 @@ const MoneyTrends2 = ({ transactions }: Props) => {
                     maintainAspectRatio: false,
                     responsive: true,
                     elements: {
+                        point: {
+                            radius: 5, // Make points slightly larger
+                            hitRadius: 20, // Increase the hit detection area
+                            hoverRadius: 10, // Make points even larger on hover
+                        },
                     },
                     plugins: {
                         title: {

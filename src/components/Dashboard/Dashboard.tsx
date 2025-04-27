@@ -82,15 +82,6 @@ const transactions = [
   year: new Date(tx.date).getFullYear() // Store the year
 }));
 
-const assets = {
-  "accounts": {
-  },
-  "loans": {
-  },
-  "investments": {
-  }
-}
-
 type Suggestion = {
   id: number;
   text: string;
@@ -103,7 +94,7 @@ const tabs = [
   {
     name: "Overview",
     icon: "📊",
-    component: <Overview transactions={transactions} assets={assets} />,
+    component: <Overview transactions={transactions} />,
   },
   {
     name: "Activity",

@@ -33,25 +33,42 @@ type SidebarProps = {
     setActiveTab: (tab: string) => void;
 };
 
+interface Account {
+    type: string;
+    name: string;
+    balance: number;
+}
+
+type SectionKey = "Accounts" | "Loans" | "Investments";
+
+interface FinancialSection {
+    key: SectionKey;
+    data: Account[];
+}
+
 const Sidebar = ({
     activeTab,
     setActiveTab,
 }: SidebarProps) => {
-    const [showSections, setShowSections] = useState({
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [accountType, setAccountType] = useState("");
+    const [entryName, setEntryName] = useState("");
+    const [accountBalance, setAccountBalance] = useState<number | undefined>(undefined);
+    const [accounts, setAccounts] = useState<Account[]>(getFromLocalStorage("accounts", []));
+    const [loans, setLoans] = useState<Account[]>(getFromLocalStorage("loans", []));
+    const [investments, setInvestments] = useState<Account[]>(getFromLocalStorage("investments", []));
+    const [expandedSections, setExpandedSections] = useState<Record<SectionKey, boolean>>({
         Accounts: true,
         Loans: true,
         Investments: true,
     });
 
-    const [accounts, setAccounts] = useState(() =>
-        getFromLocalStorage("accounts", defaultAccounts)
-    );
-    const [loans, setLoans] = useState(() =>
-        getFromLocalStorage("loans", defaultLoans)
-    );
-    const [investments, setInvestments] = useState(() =>
-        getFromLocalStorage("investments", defaultInvestments)
-    );
+    const toggleSection = (section: SectionKey) => {
+        setExpandedSections((prev) => ({
+            ...prev,
+            [section]: !prev[section],
+        }));
+    };
 
     // Update LocalStorage whenever state changes
     useEffect(() => {
@@ -66,20 +83,14 @@ const Sidebar = ({
         setToLocalStorage("investments", investments);
     }, [investments]);
 
-    // Form fields
-    const [accountType, setAccountType] = useState("");
-    const [entryName, setEntryName] = useState("");
-    const [accountBalance, setAccountBalance] = useState<number | undefined>(undefined);
-    const [dialogOpen, setDialogOpen] = useState(false);
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         // Create a new account object
-        const newAccount = {
+        const newAccount: Account = {
             type: accountType,
             name: entryName,
-            balance: accountBalance || 0, // Use 0 if balance is undefined
+            balance: accountBalance || 0,
         };
 
         // Add new account to the state
@@ -103,6 +114,18 @@ const Sidebar = ({
                 return;
         }
 
+        // Recalculate net worth
+        const storedAccounts: Account[] = getFromLocalStorage("accounts", []);
+        const storedLoans: Account[] = getFromLocalStorage("loans", []);
+        const storedInvestments: Account[] = getFromLocalStorage("investments", []);
+        
+        let netWorth = 0;
+        storedAccounts.forEach(account => netWorth += Number(account.balance));
+        storedInvestments.forEach(investment => netWorth += Number(investment.balance));
+        storedLoans.forEach(loan => netWorth -= Number(loan.balance));
+        
+        setToLocalStorage("netWorth", parseFloat(netWorth.toFixed(2)));
+
         // Close the dialog
         setDialogOpen(false);
 
@@ -115,25 +138,36 @@ const Sidebar = ({
     const handleDelete = (type: string, name: string) => {
         switch (type) {
             case "Accounts":
-                const filteredAccounts = accounts.filter((a) => a.name !== name);
+                const filteredAccounts = accounts.filter((a: Account) => a.name !== name);
                 setAccounts(filteredAccounts);
                 setToLocalStorage("accounts", filteredAccounts);
                 break;
             case "Loans":
-                const filteredLoans = loans.filter((l) => l.name !== name);
+                const filteredLoans = loans.filter((l: Account) => l.name !== name);
                 setLoans(filteredLoans);
                 setToLocalStorage("loans", filteredLoans);
                 break;
             case "Investments":
-                const filteredInvestments = investments.filter((i) => i.name !== name);
+                const filteredInvestments = investments.filter((i: Account) => i.name !== name);
                 setInvestments(filteredInvestments);
                 setToLocalStorage("investments", filteredInvestments);
                 break;
         }
+
+        // Recalculate net worth
+        const storedAccounts: Account[] = getFromLocalStorage("accounts", []);
+        const storedLoans: Account[] = getFromLocalStorage("loans", []);
+        const storedInvestments: Account[] = getFromLocalStorage("investments", []);
+        
+        let netWorth = 0;
+        storedAccounts.forEach(account => netWorth += Number(account.balance));
+        storedInvestments.forEach(investment => netWorth += Number(investment.balance));
+        storedLoans.forEach(loan => netWorth -= Number(loan.balance));
+        
+        setToLocalStorage("netWorth", parseFloat(netWorth.toFixed(2)));
     };
 
-
-    const financialSections = [
+    const financialSections: FinancialSection[] = [
         { key: "Accounts", data: accounts },
         { key: "Loans", data: loans },
         { key: "Investments", data: investments },
@@ -170,12 +204,12 @@ const Sidebar = ({
             {/* Financial Sections */}
             <div className="space-y-4">
                 {financialSections.map(({ key, data }) => {
-                    const isOpen = showSections[key];
+                    const isOpen = expandedSections[key];
 
                     return (
                         <div key={key}>
                             <button
-                                onClick={() => setShowSections((prev) => ({ ...prev, [key]: !isOpen }))}
+                                onClick={() => toggleSection(key)}
                                 className="w-full flex items-center justify-between text-left text-sm font-semibold text-muted-foreground hover:text-foreground transition"
                             >
                                 <div className="flex items-center gap-2">

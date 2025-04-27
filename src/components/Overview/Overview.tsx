@@ -1,5 +1,5 @@
 // src/components/Dashboard/Sidebar.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import BudgetTable from "@/components/Overview/BudgetTable";
 import VerticalBarChart from "@/components/Overview/VerticalBarChart";
 import AIExplanation from "@/components/Overview/AIExplanation";
@@ -18,22 +18,26 @@ type Transaction = {
     name: string;
     amount: number;
 };
+
 type Budget = {
     category: string;
     budgeted: number;
     amountSpent: number;
 };
-type Assets = {
-    accounts: object;
-    loans: object;
-    investments: object;
-}
-type props = {
-    transactions: Transaction[];
-    assets: Assets[];
+
+type Asset = {
+    type: string;
+    name: string;
+    balance: number;
 };
 
-const Overview = ({ transactions, assets }) => {
+type Assets = {
+    accounts: Asset[];
+    loans: Asset[];
+    investments: Asset[];
+};
+
+const Overview = ({ transactions }) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth(); // 0 = January, 11 = December
     const currentYear = currentDate.getFullYear();
@@ -218,10 +222,10 @@ const Overview = ({ transactions, assets }) => {
     function calculateNetWorth() {
         let total = 0;
         
-        // Get assets from localStorage
-        const accounts = getFromLocalStorage("accounts", []);
-        const loans = getFromLocalStorage("loans", []);
-        const investments = getFromLocalStorage("investments", []);
+        // Get assets from localStorage with proper typing
+        const accounts: Asset[] = getFromLocalStorage("accounts", []);
+        const loans: Asset[] = getFromLocalStorage("loans", []);
+        const investments: Asset[] = getFromLocalStorage("investments", []);
         
         // Add all account balances
         accounts.forEach(account => {
@@ -241,7 +245,25 @@ const Overview = ({ transactions, assets }) => {
         return parseFloat(total.toFixed(2));
     }
 
-    const [netWorth] = useState(calculateNetWorth);
+    const [netWorth, setNetWorth] = useState(calculateNetWorth);
+
+    // Add effect to update net worth when assets change
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setNetWorth(calculateNetWorth());
+        };
+
+        // Listen for storage events
+        window.addEventListener('storage', handleStorageChange);
+
+        // Also check for changes periodically
+        const interval = setInterval(handleStorageChange, 1000);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            clearInterval(interval);
+        };
+    }, []);
 
     // Net Savings, Categories Over Budget, Budgeteer Score, Net Worth
     const cards = [
@@ -295,23 +317,32 @@ const Overview = ({ transactions, assets }) => {
             "promptContext": [
                 "Tell me about my current net worth.",
                 "Explain how my assets and liabilities contribute to this value.",
-                "Provide insights on how to improve my net worth."
+                "Provide insights on how to improve my net worth.",
+                "Use my assets and liabilities to explain the value. Do not discuss net savings."
             ]
         }
     ]
 
-    const userData = {
+    const userDataRef = useRef({
         "netSavings": netSavings,
         "categoriesOverBudget": catsOverBudget,
         "budgeteerScore": budgeteerScore,
-        // "transactions": transactions,
         "budgets": budgets,
-        "assets": assets
-    }
-    console.log(userData);
+        "netWorth": netWorth
+    });
+
+    // Update the ref when values change
+    useEffect(() => {
+        userDataRef.current = {
+            "netSavings": netSavings,
+            "categoriesOverBudget": catsOverBudget,
+            "budgeteerScore": budgeteerScore,
+            "budgets": budgets,
+            "netWorth": netWorth
+        };
+    }, [netSavings, catsOverBudget, budgeteerScore, budgets, netWorth]);
 
     const fetchAIResponse = async (topic: string, context: string[]) => {
-        console.log(`Generating response for ${topic}`)
         const promptParts = [
             "You are an assistant that helps with budgeting. Your goal is to provide helpful, clear explanations.",
             "Limit your response to a short paragraph of a few sentences (with no markdown and no emojis), using only the information provided.",
@@ -319,7 +350,7 @@ const Overview = ({ transactions, assets }) => {
             "Act as if everyone knows what the value is, don't say 'It looks like' or 'I'm reporting a value of x'.",
             "Do not thank me. Do not ask me if I have any other questions. Do not use numbers or bullet points to list things.",
             "If there are easy improvements, explain how I might be able to improve the score.",
-            `Explain the reasoning behind my score for ${topic} given the following data: ${JSON.stringify(userData)}.`,
+            `Explain the reasoning behind my score for ${topic} given the following data: ${JSON.stringify(userDataRef.current)}.`,
             "Lastly, given the user's assets, does this value make sense? Offer advice based on their assets.",
         ];
         promptParts.push.apply(promptParts, context);
@@ -365,8 +396,8 @@ const Overview = ({ transactions, assets }) => {
     };
 
     const handleExplainClick = async (topic: string, context: string[]) => {
+        console.log(`Generating AI response for: ${topic}`);
         setAIexplanation({ "title": topic, "explanation": "Generating response..." })
-        console.log("userData", userData);
         setShowAIexplain(true);
         await fetchAIResponse(topic, context);
     };
