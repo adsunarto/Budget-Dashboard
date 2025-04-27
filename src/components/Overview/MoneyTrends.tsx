@@ -1,6 +1,9 @@
 import { Line } from "react-chartjs-2";
-import { useMemo } from "react";
+import { format } from 'date-fns';
+import { useMemo, useState } from "react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
+
+import { Button } from "@/components/ui/button";
 
 // Register chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -13,198 +16,256 @@ type Transaction = {
     amount: number;
 };
 
+type TimeRange = 'week' | 'month' | 'year';
+
 type Props = {
     transactions: Transaction[];
 };
 
-const formatMonthYear = (dateObj) => {
-    const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return `${months[dateObj.getMonth()]} ${dateObj.getFullYear().toString().slice(-2)}`;
+const colorMap = new Map<string, string>();
+
+const getCurrentDateRange = (range: TimeRange) => {
+    const now = new Date();
+    const startDate = new Date(now);
+    
+    switch (range) {
+        case 'week':
+            // Start of current week (Sunday)
+            startDate.setDate(now.getDate() - now.getDay());
+            return {
+                start: startDate,
+                end: new Date(startDate),
+                days: 7,
+                increment: (date: Date) => new Date(date.setDate(date.getDate() + 1)),
+                format: (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short' })
+            };
+        case 'month':
+            // Start of current month
+            startDate.setDate(1);
+            return {
+                start: startDate,
+                end: new Date(now.getFullYear(), now.getMonth() + 1, 0), // Last day of month
+                days: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
+                increment: (date: Date) => new Date(date.setDate(date.getDate() + 1)),
+                format: (date: Date) => date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+            };
+        case 'year':
+            // startDate.setMonth(0, 1); // January 1st
+            // const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
+            const monthCount = now.getMonth() + 1; // e.g. April = 3 + 1 = 4 months
+
+            // return {
+            //     start: startDate,
+            //     end: endDate,
+            //     days: monthCount,
+            //     increment: (date: Date) => new Date(date.setMonth(date.getMonth() + 1)),
+            //     format: (date: Date) => date.toLocaleDateString('en-US', { month: 'short' })
+            // };
+
+            startDate.setMonth(0, 1);
+            return {
+                start: startDate,
+                end: now, // today
+                days: 12, // keep if you're still grouping by months
+                increment: (date: Date) => new Date(date.setMonth(date.getMonth() + 1)),
+                format: (date: Date) => date.toLocaleDateString('en-US', { month: 'short' })
+            };
+            }
 };
 
 const MoneyTrends = ({ transactions }: Props) => {
-    // Aggregating data by category per month
-    const categoryTrends = useMemo(() => {
-        const trends: { [key: string]: { [key: string]: number } } = {}; // {category: {month_year: total_spent}}
+    const [timeRange, setTimeRange] = useState<TimeRange>('month');
+    const dateRange = useMemo(() => getCurrentDateRange(timeRange), [timeRange]);
 
-        transactions.forEach((tx) => {
-            const dateObj = new Date(tx.date);
-            const monthYear = formatMonthYear(dateObj); // "Apr 2025" (current month/year)
-            if (!trends[tx.tag]) {
-                trends[tx.tag] = {};
-            }
-            if (!trends[tx.tag][monthYear]) {
-                trends[tx.tag][monthYear] = 0;
-            }
-            trends[tx.tag][monthYear] += tx.amount;
-        });
-
-        return trends;
-    }, [transactions]);
-
-    // Prepare data for the chart, calculating delta (change from previous month)
+    // Filter and aggregate transactions for the current date range
     const chartData = useMemo(() => {
         const labels: string[] = [];
-        const datasets: any[] = [];
+        const datasets: Record<string, number[]> = {};
+        
+        // Initialize date iterator and labels
+        const currentDate = new Date(dateRange.start);
+        for (let i = 0; i < dateRange.days; i++) {
+            labels.push(dateRange.format(new Date(currentDate)));
+            dateRange.increment(currentDate);
+        }
 
-        Object.entries(categoryTrends).forEach(([category, monthlyData]) => {
-            const dataPoints = Object.entries(monthlyData)
-                .sort(([monthA], [monthB]) => (monthA > monthB ? 1 : -1)) // Sort by month
-                .map(([, amount], index, arr) => {
-                    // If not the first entry, calculate the delta
-                    if (index > 0) {
-                        return amount - arr[index - 1][1];
-                    }
-                    return 0; // For the first month, set the delta to 0 (no prior month to compare)
-                });
-
-            // Add category name as dataset
-            datasets.push({
-                label: category,
-                data: dataPoints,
-                fill: false,
-                borderColor: getRandomShades(), // Random color for each category line
-                tension: 0.4,
-            });
-
-            // Add months to the label if not already added
-            Object.keys(monthlyData).forEach((monthYear) => {
-                if (!labels.includes(monthYear)) {
-                    labels.push(monthYear);
-                }
-            });
+        // Initialize datasets with zeros
+        transactions.forEach(tx => {
+            if (!datasets[tx.tag]) {
+                datasets[tx.tag] = new Array(dateRange.days).fill(0);
+            }
         });
 
+        // Aggregate transactions within date range
+        transactions.forEach(tx => {
+            const txDate = new Date(tx.date);
+            if (txDate >= dateRange.start && txDate <= dateRange.end) {
+                const index = timeRange === 'year' 
+                    ? txDate.getMonth() 
+                    : Math.floor((txDate.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+                
+                if (index >= 0 && index < dateRange.days) {
+                    if (!datasets[tx.tag]) {
+                        datasets[tx.tag] = new Array(dateRange.days).fill(0); 
+                    }
+                    datasets[tx.tag][index] += tx.amount*(-1);
+                }
+            }
+        });
+
+        // Then in your chartDatasets mapping, replace getRandomShades() with:
+        const chartDatasets = Object.entries(datasets).map(([tag, data]) => ({
+            label: tag,
+            data,
+            fill: false,
+            borderColor: getColorForCategory(tag), // Use consistent color per category
+            tension: 0.4,
+        }));
+
         return {
-            labels: labels.sort(), // Sort months in chronological order
-            datasets,
+            labels,
+            datasets: chartDatasets,
         };
-    }, [categoryTrends]);
+    }, [transactions, timeRange, dateRange]);
+
+    const getButtonClass = (range: TimeRange) => 
+        `w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition ${timeRange === range ? "bg-primary/20 text-primary" : "hover:bg-muted text-muted-foreground"}`;
 
     return (
-        <div className="w-full h-[400px] relative">
-            <Line
-                data={chartData}
-                options={{
-                    maintainAspectRatio: false,
-                    responsive: true,
-                    elements: {
-                    },
-                    plugins: {
-                        title: {
-                            color: '#ffffff', // white legend text
-                            display: true,
-                            text: "Spending Trends by Category",
-                            font: {
-                                size: 18,
-                                family: "'Poppins', sans-serif",
-                                weight: '600',
-                            },
-                            padding: {
-                                bottom: 20,
-                            },
-                        },
-                        legend: {
-                            labels: {
-                                color: '#ffffff', // white legend text
-                                font: {
-                                    family: "'Poppins', sans-serif",
-                                    size: 12,
-                                    weight: '500',
-                                },
-                                padding: 20,
-                                usePointStyle: true, // Nicer legend item markers
-                            },
-                        },
-                        tooltip: {
-                            backgroundColor: '#333333', // darker background for tooltip
-                            titleColor: '#ffffff', // white tooltip title
-                            bodyColor: '#ffffff', // white tooltip body text
-                            callbacks: {
-                                label: (tooltipItem) => {
-                                    return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
-                                },
-                            },
-                            titleFont: {
-                                family: "'Poppins', sans-serif",
-                            },
-                            bodyFont: {
-                                family: "'Poppins', sans-serif",
-                            },
-                        },
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#ffffff', // white font for x-axis
-                                font: {
-                                    family: "'Poppins', sans-serif",
-                                },
-                            },
-                            grid: {
-                                display: false, // Remove vertical grid lines
-                                drawBorder: false, // Optional: remove axis line
-                            },
+        <div className="flex flex-col h-[50vh] w-full">
+            <div className="flex justify-center mb-4 space-x-4">
+                <button
+                    onClick={() => setTimeRange('week')}
+                    className={getButtonClass('week')}
+                >
+                    This Week
+                </button>
+                <button
+                    onClick={() => setTimeRange('month')}
+                    className={getButtonClass('month')}
+                >
+                    This Month
+                </button>
+                <button
+                    onClick={() => setTimeRange('year')}
+                    className={getButtonClass('year')}
+                >
+                    This Year
+                </button>
+            </div>
+            
+            <div className="flex-grow">
+                <Line
+                    data={chartData}
+                    options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
                             title: {
                                 display: true,
-                                // text: 'Month-Year',
+                                text: `${timeRange === 'week' ? 'This Week' : timeRange === 'month' ? format(new Date(), 'MMMM yyyy') : format(new Date(), 'yyyy')}`,
+
+                                // text: `Spending Trends (${timeRange === 'week' ? 'This Week' : timeRange === 'month' ? 'This Month' : 'This Year'})`,
                                 font: {
+                                    size: 18,
                                     family: "'Poppins', sans-serif",
-                                    weight: '500',
+                                    weight: '600',
                                 },
-                            }
+                                padding: {
+                                    bottom: 20,
+                                },
+                            },
+                            legend: {
+                                labels: {
+                                    font: {
+                                        family: "'Poppins', sans-serif",
+                                        size: 12,
+                                        weight: '500',
+                                    },
+                                    padding: 20,
+                                    usePointStyle: true,
+                                },
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (tooltipItem) => {
+                                        return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
+                                    },
+                                },
+                                titleFont: {
+                                    family: "'Poppins', sans-serif",
+                                },
+                                bodyFont: {
+                                    family: "'Poppins', sans-serif",
+                                },
+                            },
                         },
-                        y: {
-                            grid: {
-                                display: false, // Remove horizontal grid lines
-                                drawBorder: false, // Optional: remove axis line
-                            },
-                            title: {
-                                display: true,
-                                text: 'Change in Amount ($)',
-                                font: {
-                                    family: "'Poppins', sans-serif",
-                                    weight: '500',
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false,
+                                    drawBorder: false,
                                 },
-                                color: '#ffffff', // white title for y-axis
-                            },
-                            ticks: {
-                                color: '#ffffff', // white font for x-axis
-                                font: {
-                                    family: "'Poppins', sans-serif",
+                                ticks: {
+                                    font: {
+                                        family: "'Poppins', sans-serif",
+                                    },
+                                    maxRotation: timeRange === 'week' ? 45 : 0,
                                 },
                             },
-                            beginAtZero: true,
+                            y: {
+                                grid: {
+                                    display: false,
+                                    drawBorder: false,
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Amount ($)',
+                                    font: {
+                                        family: "'Poppins', sans-serif",
+                                        weight: '500',
+                                    },
+                                },
+                                ticks: {
+                                    font: {
+                                        family: "'Poppins', sans-serif",
+                                    },
+                                },
+                                beginAtZero: true,
+                            },
                         },
-                    },
-                }}
-            />
+                    }}
+                />
+            </div>
         </div>
     );
 };
 
-// Helper function to generate random green shades
-const getRandomShades = () => {
-    const colors = [
-      '#3B82F6', // Blue-500 (Bright blue)
-      '#60A5FA', // Blue-400 (Lighter blue)
-      '#22D3EE', // Cyan-400 (Bright teal)
-      '#06B6D4', // Cyan-500 (Stronger teal)
-      '#4ADE80', // Green-400 (Bright green)
-      '#22C55E', // Green-500 (Deeper green)
-      '#A78BFA', // Purple-400 (Bright purple)
-      '#8B5CF6', // Purple-500 (Stronger purple)
+
+const getColorForCategory = (category: string) => {
+    // If we already have a color for this category, return it
+    if (colorMap.has(category)) {
+      return colorMap.get(category)!;
+    }
+  
+    // Otherwise generate a new color and store it
+    const randomShades = [
+      '#1A3E72', '#2D5C9E', '#4A89DC', '#1565C0', '#2196F3',
+      '#1B5E20', '#388E3C', '#66BB6A', '#00897B', '#43A047',
+      '#FFD700', '#FFC400', '#FFA000', '#FFF176', '#FDD835',
+      '#6A1B9A', '#4527A0', '#7E57C2', '#9575CD', '#00897B',
+      '#26A69A', '#4DB6AC', '#80CBC4'
     ];
-    return colors[Math.floor(Math.random() * colors.length)];
+    
+    // Use the category's hash to pick a consistent color
+    const hash = Array.from(category).reduce(
+      (hash, char) => char.charCodeAt(0) + ((hash << 5) - hash),
+      0
+    );
+    const color = randomShades[Math.abs(hash) % randomShades.length];
+    
+    colorMap.set(category, color);
+    return color;
   };
-  
-  
-  
 
 export default MoneyTrends;
-
-
-
