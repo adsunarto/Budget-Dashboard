@@ -19,18 +19,12 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Activity, Calendar, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Activity, Calendar, BarChart3, Sparkles } from "lucide-react";
 const tabs = [
     { label: "Overview", icon: LayoutDashboard },
     { label: "Activity", icon: Activity },
+    { label: "Learn", icon: Sparkles },
     { label: "Plan", icon: Calendar },
     { label: "Compare", icon: BarChart3 },
 ];
@@ -76,7 +70,7 @@ const Sidebar = ({
     // Form fields
     const [accountType, setAccountType] = useState("");
     const [entryName, setEntryName] = useState("");
-    const [accountBalance, setAccountBalance] = useState();
+    const [accountBalance, setAccountBalance] = useState<number | undefined>(undefined);
     const [dialogOpen, setDialogOpen] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -86,7 +80,7 @@ const Sidebar = ({
         const newAccount = {
             type: accountType,
             name: entryName,
-            balance: parseFloat(accountBalance.toString()), // Ensure balance is a number
+            balance: accountBalance || 0, // Use 0 if balance is undefined
         };
 
         // Add new account to the state
@@ -116,7 +110,7 @@ const Sidebar = ({
         // Clear form
         setAccountType("");
         setEntryName("");
-        setAccountBalance(0);
+        setAccountBalance(undefined);
     };
 
     const handleDelete = (type: string, name: string) => {
@@ -205,7 +199,6 @@ const Sidebar = ({
                                             <div className="flex flex-col">
                                                 <span className="text-foreground font-medium">{item.name}</span>
                                                 <span className="text-xs text-muted-foreground">
-                                                    {item.type === "Loan" ? "-" : ""}
                                                     ${Math.abs(item.balance).toLocaleString(undefined, {
                                                         minimumFractionDigits: 2,
                                                         maximumFractionDigits: 2,
@@ -254,17 +247,42 @@ const Sidebar = ({
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-foreground">Type</label>
-                                <Select value={accountType} onValueChange={setAccountType}>
-                                    <SelectTrigger className="w-full mt-1">
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Account">Account</SelectItem>
-                                        <SelectItem value="Loan">Loan</SelectItem>
-                                        <SelectItem value="Investment">Investment</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <label className="block text-sm font-medium text-foreground mb-2">Type</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccountType("Account")}
+                                        className={`p-4 rounded-lg outline outline-2 transition ${
+                                            accountType === "Account"
+                                                ? "outline-primary bg-primary/10 text-white"
+                                                : "outline-gray-300 text-white hover:outline-primary/50"
+                                        }`}
+                                    >
+                                        <div className="text-center font-medium">Account</div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccountType("Loan")}
+                                        className={`p-4 rounded-lg outline outline-2 transition ${
+                                            accountType === "Loan"
+                                                ? "outline-primary bg-primary/10 text-white"
+                                                : "outline-gray-300 text-white hover:outline-primary/50"
+                                        }`}
+                                    >
+                                        <div className="text-center font-medium">Loan</div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAccountType("Investment")}
+                                        className={`p-4 rounded-lg outline outline-2 transition ${
+                                            accountType === "Investment"
+                                                ? "outline-primary bg-primary/10 text-white"
+                                                : "outline-gray-300 text-white hover:outline-primary/50"
+                                        }`}
+                                    >
+                                        <div className="text-center font-medium">Investment</div>
+                                    </button>
+                                </div>
                             </div>
 
                             <div>
@@ -273,7 +291,7 @@ const Sidebar = ({
                                     type="text"
                                     value={entryName}
                                     onChange={(e) => setEntryName(e.target.value)}
-                                    placeholder="e.g. Checking, Car Loan"
+                                    placeholder="e.g. Checking, Car Loan, Roth IRA"
                                     className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
                                 />
                             </div>
@@ -285,7 +303,7 @@ const Sidebar = ({
                                     value={accountBalance}
                                     onChange={(e) => setAccountBalance(parseFloat(e.target.value))}
                                     placeholder="e.g. 15000"
-                                    className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                                    className="w-full mt-1 bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                             </div>
 

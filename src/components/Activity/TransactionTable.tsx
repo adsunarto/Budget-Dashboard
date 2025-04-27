@@ -27,34 +27,30 @@ const TransactionTable = ({ transactions }: Props) => {
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-background shadow-sm">
       <table className="min-w-full text-sm text-left">
-        <thead className="bg-gray-200">
+        <thead className="bg-muted">
           <tr>
-            <th className="p-3 font-medium text-gray-700">Date</th>
-            <th className="p-3 font-medium text-gray-700">Name</th>
-            <th className="p-3 font-medium text-gray-700">Tag(s)</th>
-            <th className="p-3 font-medium text-gray-700">Amount</th>
+            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Date</th>
+            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Name</th>
+            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Tag(s)</th>
+            <th className="p-4 font-semibold text-foreground text-xs uppercase tracking-wider">Amount</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-border">
           {localTransactions.map((tx) => (
-            <tr key={tx.id} className="border-t hover:bg-gray-50">
-              <td className="p-3 text-gray-800">{tx.date}</td>
-              <td className="p-3 text-gray-800">{tx.name}</td>
-              <td className="p-3 text-gray-800">
+            <tr key={tx.id} className="hover:bg-muted/40 transition">
+              <td className="p-4 text-foreground font-medium">{tx.date}</td>
+              <td className="p-4 text-foreground font-medium">{tx.name}</td>
+              <td className="p-4 text-foreground">
                 <input
                   type="text"
                   value={tx.tag}
                   onChange={(e) => handleTagChange(tx.id, e.target.value)}
-                  className="w-full bg-transparent border-b border-gray-300 focus:outline-none focus:border-blue-400"
+                  className="w-full bg-transparent border-b border-border focus:outline-none focus:border-primary transition"
                 />
               </td>
-              <td
-                className={`p-3 ${
-                  tx.amount < 0 ? "text-red-400" : "text-green-600"
-                }`}
-              >
+              <td className={`p-4 font-semibold ${tx.amount < 0 ? "text-red-400" : "text-green-400"}`}>
                 {tx.amount < 0 ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
               </td>
             </tr>

@@ -79,23 +79,16 @@ const BudgetTable = ({ transactions, budgets, setBudgets, updateCard, updateScor
                     updateScore();
                   }}
                   value={
-                    budgets.find((b) => b.category === tx.category)?.budgeted.toString() || ""
+                    budgets.find((b) => b.category === tx.category)?.budgeted.toFixed(2) || "0.00"
                   }
-                  placeholder="0"
-                  className="w-24 bg-transparent border-b border-border focus:outline-none focus:border-primary transition"
+                  placeholder="0.00"
+                  className="w-24 bg-transparent border-b border-border focus:outline-none focus:border-primary transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </td>
               <td
-                className={cn(
-                  "p-4 font-semibold",
-                  tx.spent < 0 ? "text-red-400" : "text-green-400"
-                )}
+                className={"p-4 font-semibold"}
               >
-                {tx.spent < 0 ? "-" : "+"}$
-                {Math.abs(tx.spent).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                ${tx.spent.toFixed(2)}
               </td>
             </tr>
           ))}

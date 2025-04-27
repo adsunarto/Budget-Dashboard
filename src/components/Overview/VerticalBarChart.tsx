@@ -26,6 +26,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
     if (!spendingMap[tx.tag]) {
       spendingMap[tx.tag] = 0;
     }
+    // Add the absolute value of the amount (since spending is negative)
     spendingMap[tx.tag] += Math.abs(tx.amount);
   });
 
@@ -33,7 +34,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
   const updatedBudgets = [...budgets];
   Object.keys(spendingMap).forEach(category => {
     if (!updatedBudgets.some(b => b.category === category)) {
-      updatedBudgets.push({ category, budgeted: 1000 }); // Default budget of 1000 for new categories
+      updatedBudgets.push({ category, budgeted: 0 }); // Start with 0 budget for new categories
     }
   });
 
@@ -45,8 +46,9 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
 
   const rawData = categories.map((category) => {
     const spent = spendingMap[category] || 0;
-    const budgeted = updatedBudgets.find((b) => b.category === category)?.budgeted ?? 1000;
-    return 100 * spent / (budgeted === 0 ? 1 : budgeted); // Avoid divide-by-zero
+    const budgeted = updatedBudgets.find((b) => b.category === category)?.budgeted || 0;
+    // Calculate percentage of budget spent (spent is already positive)
+    return budgeted === 0 ? 0 : (spent / budgeted) * 100;
   });
 
   const data = {

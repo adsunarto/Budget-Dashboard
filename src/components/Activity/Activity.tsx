@@ -1,5 +1,12 @@
 import { useState, useMemo } from "react";
 import TransactionTable from "./TransactionTable";
+import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
+
+type Budget = {
+    category: string;
+    budgeted: number;
+    amountSpent: number;
+};
 
 type Transaction = {
     id: number;
@@ -57,21 +64,23 @@ const Activity = ({ transactions: initialTransactions }: Props) => {
     };
 
     return (
-        <div>
-            <h2 className="text-center text-2xl font-semibold mb-4">Statement History</h2>
+        <div className="relative">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-center text-2xl font-semibold">Statement History</h2>
+            </div>
 
             <div className="flex items-center justify-between mb-4">
                 {/* Buttons on the left */}
                 <div className="flex space-x-2">
                     <button
                         onClick={handlePrevMonth}
-                        className="px-3 py-2 bg-[#475598] text-white rounded"
+                        className="w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition hover:bg-muted text-muted-foreground"
                     >
                         <i className="fa-solid fa-chevron-left"></i>
                     </button>
                     <button
                         onClick={handleNextMonth}
-                        className="px-3 py-2 bg-[#475598] text-white rounded"
+                        className="w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition hover:bg-muted text-muted-foreground"
                     >
                         <i className="fa-solid fa-chevron-right"></i>
                     </button>

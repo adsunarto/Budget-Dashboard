@@ -5,6 +5,7 @@ import VerticalBarChart from "@/components/Overview/VerticalBarChart";
 import AIExplanation from "@/components/Overview/AIExplanation";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
 import MoneyTrends from "./MoneyTrends";
+import MoneyTrends2 from "./MoneyTrends2";
 import GaugeComponent from 'react-gauge-component';
 import Header from "@/components/Dashboard/Header"; // Add this import at the top
 
@@ -60,9 +61,13 @@ const Overview = ({ transactions, assets }) => {
     });
 
     function calculateNetSavings() {
-        let total = 0
+        let total = 0;
         transactionsThisMonth.forEach(tx => {
-            total += tx.amount;
+            if (tx.tag === "Income") {
+                total += tx.amount; // Add income
+            } else {
+                total -= Math.abs(tx.amount); // Subtract all other expenses
+            }
         });
         return parseFloat(total.toFixed(2));
     }
@@ -86,6 +91,25 @@ const Overview = ({ transactions, assets }) => {
     const [budgets, setBudgets] = useState(() =>
         getFromLocalStorage("budgets", defaultBudgets)
     );
+
+    // Add effect to listen for changes in localStorage
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const updatedBudgets = getFromLocalStorage("budgets", defaultBudgets);
+            setBudgets(updatedBudgets);
+        };
+
+        // Listen for storage events
+        window.addEventListener('storage', handleStorageChange);
+
+        // Also check for changes periodically
+        const interval = setInterval(handleStorageChange, 1000);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            clearInterval(interval);
+        };
+    }, []);
 
     function calculateBudgeteerScore() {
         const minScore = 300;
@@ -191,14 +215,42 @@ const Overview = ({ transactions, assets }) => {
         }
     }
 
-    // Net Savings, Categories Over Budget, Budgeteer Score
+    function calculateNetWorth() {
+        let total = 0;
+        
+        // Get assets from localStorage
+        const accounts = getFromLocalStorage("accounts", []);
+        const loans = getFromLocalStorage("loans", []);
+        const investments = getFromLocalStorage("investments", []);
+        
+        // Add all account balances
+        accounts.forEach(account => {
+            total += Number(account.balance);
+        });
+        
+        // Add all investment balances
+        investments.forEach(investment => {
+            total += Number(investment.balance);
+        });
+        
+        // Subtract all loan balances
+        loans.forEach(loan => {
+            total -= Number(loan.balance);
+        });
+        
+        return parseFloat(total.toFixed(2));
+    }
+
+    const [netWorth] = useState(calculateNetWorth);
+
+    // Net Savings, Categories Over Budget, Budgeteer Score, Net Worth
     const cards = [
         {
             "ai-explain-id": "ai-explain-net-spend",
             "title": "Net Savings",
             "id": "net-savings",
             "value": netSavings,
-            "valueSymbol": "$",
+            "symbol": "$",
             "color": getnetSavingsColor(netSavings),
             "additionalDetail": "",
             "promptContext": [
@@ -212,7 +264,7 @@ const Overview = ({ transactions, assets }) => {
             "title": "Categories Over Budget",
             "id": "categories-over-budget",
             "value": catsOverBudget,
-            "valueSymbol": "",
+            "symbol": "",
             "color": getOverBudgetColor(catsOverBudget),
             "additionalDetail": "",
             "promptContext": [
@@ -225,11 +277,25 @@ const Overview = ({ transactions, assets }) => {
             "title": "Budgeteer Score",
             "id": "credit-score",
             "value": budgeteerScore,
-            "valueSymbol": "",
+            "symbol": "",
             "color": getBudgeteerScoreColor(budgeteerScore),
             "additionalDetail": " " + getBudgeteerScoreCategory(budgeteerScore),
             "promptContext": [
                 "Tell me what my Budgeteer Score is and why."
+            ]
+        },
+        {
+            "ai-explain-id": "ai-explain-net-worth",
+            "title": "Net Worth",
+            "id": "net-worth",
+            "value": netWorth,
+            "symbol": "$",
+            "color": getnetSavingsColor(netWorth),
+            "additionalDetail": "",
+            "promptContext": [
+                "Tell me about my current net worth.",
+                "Explain how my assets and liabilities contribute to this value.",
+                "Provide insights on how to improve my net worth."
             ]
         }
     ]
@@ -309,79 +375,13 @@ const Overview = ({ transactions, assets }) => {
         setShowAIexplain(false);
     };
 
-    // return (
-    //     <>
-    //         {/* Card Container */}
-    //         <div className="flex justify-center" style={{ gap: "10px" }}>
-    //             {cards.map(card => (
-    //                 // Cards
-    //                 <div id={card.id} className="relative flex bg-white shadow-lg rounded-lg w-[400px] h-[200px] m-4 flex-col justify-center items-center text-lg text-center">
-    //                     {/* Button in top-right */}
-    //                     <button id={card["ai-explain-id"]} className="group absolute top-2 right-2" onClick={() => handleExplainClick(card.title, card.promptContext)}>
-    //                         <img className="icon h-4 w-4" src="src/assets/ai-sparkle.png" alt="Explain with AI" />
-
-    //                         {/* Tooltip below the icon */}
-    //                         <div className="absolute hidden group-hover:flex flex-col items-center top-full mt-1 left-1/2 -translate-x-1/2 z-10">
-    //                             <div className="bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap shadow-md">
-    //                                 Explain with AI
-    //                             </div>
-    //                         </div>
-    //                     </button>
-
-    //                     <div className="flex flex-col items-center mt-6">
-    //                         {/* Title */}
-    //                         <h3 className="text-gray-700 font-medium">{card.title}</h3>
-
-    //                         {/* Value */}
-    //                         <h2 className={card.color}>
-    //                             {card.id === "credit-score" ? (
-    //                                 <div className="w-[150px] h-[150px] mt-0">
-    //                                     <GaugeComponent
-    //                                         type="radial"
-    //                                         value={50}
-    //                                         minValue={0}
-    //                                         maxValue={100}
-    //                                     />
-    //                                 </div>
-    //                             ) : (
-    //                                 <>
-    //                                     {card.value < 0 ? "-" : ""}{card.valueSymbol}{Math.abs(card.value)}{card.additionalDetail}
-    //                                 </>
-    //                             )}
-    //                         </h2>
-    //                     </div>
-    //                 </div>
-    //             ))}
-    //         </div>
-
-    //         {/* AI Explanation */}
-    //         {showAIexplain && (
-    //             <AIExplanation
-    //                 response={AIexplanation}
-    //                 handleCloseCard={handleCloseCard}
-    //             />
-    //         )}
-
-    //         {/* Budget Table Component */}
-    //         <BudgetTable transactions={transactionsThisMonth} budgets={budgets} setBudgets={setBudgets} updateCard={calculateCatsOverBudget} updateScore={calculateBudgeteerScore} />
-
-    //         <div className="flex">
-    //             {/* Line Graph Component */}
-    //             <MoneyTrends transactions={transactionsMinusPaycheck} />
-
-    //             {/* Bar Graph Component */}
-    //             <VerticalBarChart transactions={transactionsThisMonthMinusPaycheck} budgets={budgets} />
-    //         </div>
-    //     </>
-    // );
-
     return (
-<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
 
             {/* Left Column */}
             <div className="flex flex-col gap-8 lg:col-span-2">
-            <div className="glass p-6">
-                    <MoneyTrends transactions={transactionsMinusPaycheck} />
+                <div className="glass p-6">
+                    <MoneyTrends2 transactions={transactionsMinusPaycheck} />
                 </div>
 
 
@@ -415,22 +415,9 @@ const Overview = ({ transactions, assets }) => {
 
                             {/* Card content below */}
                             <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
-
-                            {card.id === "budgeteer-score" ? (
-                                <div className="w-32 h-32 mt-2">
-                                    <GaugeComponent
-                                        type="radial"
-                                        value={Math.min(100, (card.value - 300) / 5.5)}
-                                        minValue={0}
-                                        maxValue={100}
-                                    />
-                                </div>
-                            ) : (
-                                <h2 className="text-3xl font-bold mt-4">
-                                    {card.value < 0 ? "-" : ""}{card.symbol}{Math.abs(card.value)}
-                                </h2>
-                            )}
-
+                            <h2 className="text-3xl font-bold mt-4">
+                                {card.value < 0 ? "-" : ""}{card.symbol}{Math.abs(card.value)}
+                            </h2>
                         </div>
                     ))}
                 </div>
