@@ -2,70 +2,41 @@
 import { useState, useEffect, useRef } from "react";
 import BudgetTable from "@/components/Overview/BudgetTable";
 import VerticalBarChart from "@/components/Overview/VerticalBarChart";
-import AIExplanation from "@/components/Overview/AIExplanation";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
 import MoneyTrends from "./MoneyTrends";
 import MoneyTrends2 from "./MoneyTrends2";
-import GaugeComponent from 'react-gauge-component';
-import Header from "@/components/Dashboard/Header"; // Add this import at the top
-import LineChart from "./LineChart";
+import { Transaction, Budget, Asset } from "@/lib/types";
 
-type Transaction = {
-    id: number;
-    date: string;
-    tag: string;
-    name: string;
-    amount: number;
-};
-
-type Budget = {
-    category: string;
-    budgeted: number;
-    amountSpent: number;
-};
-
-type Asset = {
-    type: string;
-    name: string;
-    balance: number;
-};
-
-type Assets = {
-    accounts: Asset[];
-    loans: Asset[];
-    investments: Asset[];
-};
-
-const Overview = ({ transactions }) => {
+const Overview = ({ transactions }: { transactions: Transaction[] }) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth(); // 0 = January, 11 = December
     const currentYear = currentDate.getFullYear();
 
-    const transactionsThisMonth = transactions.filter((tx) => {
-        const [month, day, year] = tx.date.split("/").map(Number);
+    const transactionsThisMonth = transactions.filter((tx: Transaction) => {
+        const [month, _, year] = tx.date.split("/").map(Number);
         return month - 1 === currentMonth && year === currentYear;
     });
 
-    const transactionsMinusPaycheck = transactions.filter((tx) => {
+    const transactionsMinusPaycheck = transactions.filter((tx: Transaction) => {
         return tx.tag !== "Income";
     });
 
     const spendingByCategory: Record<string, number> = {};
 
-    transactionsThisMonth.forEach((tx) => {
+    transactionsThisMonth.forEach((tx: Transaction) => {
         if (!spendingByCategory[tx.tag]) {
             spendingByCategory[tx.tag] = 0;
         }
         spendingByCategory[tx.tag] += tx.amount;
     });
 
-    const transactionsThisMonthMinusPaycheck = transactionsThisMonth.filter((tx) => {
+    const transactionsThisMonthMinusPaycheck = transactionsThisMonth.filter((tx: Transaction) => {
         return tx.tag !== "Income";
     });
 
     function calculateNetSavings() {
         let total = 0;
-        transactionsThisMonth.forEach(tx => {
+        transactionsThisMonth.forEach((tx: Transaction) => {
             if (tx.tag === "Income") {
                 total += tx.amount; // Add income
             } else {
@@ -75,18 +46,17 @@ const Overview = ({ transactions }) => {
         return parseFloat(total.toFixed(2));
     }
 
-    const [netSavings] = useState(calculateNetSavings);
-
+    const [netSavings] = useState(calculateNetSavings());
     const defaultBudgets: Budget[] = Array.from(
         transactionsThisMonth
-            .filter(tx => tx.tag !== "Income")
-            .reduce((map, tx) => {
-                const current = map.get(tx.tag) || { budgeted: 0, amountSpent: 0 };
+            .filter((tx: Transaction) => tx.tag !== "Income")
+            .reduce((map: Map<string, Budget>, tx: Transaction) => {
+                const current = map.get(tx.tag) || { budgeted: 0, amountSpent: 0, category: tx.tag };
                 current.amountSpent += tx.amount;
                 map.set(tx.tag, current);
                 return map;
             }, new Map())
-    ).map(([category, data]) => ({
+    ).map(([category, data]: [string, Budget]) => ({
         category,
         budgeted: 0,
         amountSpent: parseFloat(data.amountSpent.toFixed(2)),
@@ -192,7 +162,7 @@ const Overview = ({ transactions }) => {
     function calculateCatsOverBudget() {
         // Calculate spending by category from current month's transactions
         const spendingByCategory: Record<string, number> = {};
-        transactionsThisMonth.forEach((tx) => {
+        transactionsThisMonth.forEach((tx: Transaction) => {
             if (!spendingByCategory[tx.tag]) {
                 spendingByCategory[tx.tag] = 0;
             }

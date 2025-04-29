@@ -2,18 +2,7 @@ import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import ChartAnnotation from 'chartjs-plugin-annotation';  // Import the annotation plugin
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartAnnotation);
-
-type Transaction = {
-  id: number;
-  date: string;
-  tag: string;
-  name: string;
-  amount: number;
-};
-type Budget = {
-  category: string;
-  budgeted: number;
-};
+import { Transaction, Budget } from '@/lib/types';
 type props = {
   transactions: Transaction[];
   budgets: Budget[]; // optional for comparing with fixed budget goals
@@ -34,7 +23,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
   const updatedBudgets = [...budgets];
   Object.keys(spendingMap).forEach(category => {
     if (!updatedBudgets.some(b => b.category === category)) {
-      updatedBudgets.push({ category, budgeted: 0 }); // Start with 0 budget for new categories
+      updatedBudgets.push({ category, budgeted: 0, amountSpent: 0 }); // Start with 0 budget for new categories
     }
   });
 
@@ -57,7 +46,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
       {
         label: 'Spent (%)',
         data: rawData,
-        backgroundColor: (context) => {
+        backgroundColor: (context: any) => {
           const chart = context.chart;
           const { ctx, chartArea } = chart;
           if (!chartArea) return null; // This is for initial animation
@@ -78,18 +67,16 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
           orangeGradient.addColorStop(0, '#FF8C00');
           orangeGradient.addColorStop(1, '#FFEC81');
 
-          if (["Income", "Investment"].includes(category)) {
-            if (value < 90) return '#EF4444';   // red
-            if (value < 100) return '#FACC15';  // orange
-            return '#34D399';                   // green
-          } else if (["Rent/Utilities", "Debt Payment"].includes(category)) {
-            if (value < 90) return redGradient;   // red
-            if (value < 100) return orangeGradient; // orange
-            return greenGradient;                   // green
+          if (["Rent/Utilities", "Debt Payment"].includes(category)) {
+            // Positive categories - Reward paying more
+            if (value < 80) return redGradient;
+            if (value < 100 || value > 100) return orangeGradient;
+            return greenGradient;
           } else {
-            if (value < 90) return greenGradient;   // green
-            if (value <= 100) return orangeGradient; // orange
-            return redGradient;                   // red gradient
+            // Negative categories - Punish spending more
+            if (value < 80) return greenGradient;
+            if (value <= 100) return orangeGradient;
+            return redGradient;
           }
         },
         borderRadius: 4,
@@ -116,7 +103,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
       },
       tooltip: {
         callbacks: {
-          label: (context) => `${context.raw}%`, // Display percentage in tooltip
+          label: (context: any) => `${context.raw}%`, // Display percentage in tooltip
         },
       },
       annotation: {
@@ -156,7 +143,7 @@ const VerticalBarChart = ({ transactions, budgets }: props) => {
   return (
     <div className="flex h-[50vh]">  {/* Full height container with flexbox */}
       <div className="flex flex-col justify-end h-full w-[25vw] overflow-hidden">
-        <Bar data={data} options={options} />
+        <Bar data={data} options={options as any} />
       </div>
     </div>
   );

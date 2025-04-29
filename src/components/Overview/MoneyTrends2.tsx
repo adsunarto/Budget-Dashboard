@@ -17,7 +17,7 @@ type Props = {
     transactions: Transaction[];
 };
 
-const formatMonthYear = (dateObj) => {
+const formatMonthYear = (dateObj: Date) => {
     const months = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -30,7 +30,7 @@ const MoneyTrends2 = ({ transactions }: Props) => {
     const categoryTrends = useMemo(() => {
         const trends: { [key: string]: { [key: string]: number } } = {}; // {category: {month_year: total_spent}}
 
-        transactions.forEach((tx) => {
+        transactions.forEach((tx: Transaction) => {
             const dateObj = new Date(tx.date);
             const monthYear = formatMonthYear(dateObj); // "Apr 2025" (current month/year)
             if (!trends[tx.tag]) {
@@ -106,7 +106,7 @@ const MoneyTrends2 = ({ transactions }: Props) => {
                             font: {
                                 size: 18,
                                 family: "'Poppins', sans-serif",
-                                weight: '600',
+                                weight: 600,
                             },
                             padding: {
                                 bottom: 20,
@@ -118,7 +118,7 @@ const MoneyTrends2 = ({ transactions }: Props) => {
                                 font: {
                                     family: "'Poppins', sans-serif",
                                     size: 12,
-                                    weight: '500',
+                                    weight: 500,
                                 },
                                 padding: 20,
                                 usePointStyle: true, // Nicer legend item markers
@@ -129,7 +129,7 @@ const MoneyTrends2 = ({ transactions }: Props) => {
                             titleColor: '#ffffff', // white tooltip title
                             bodyColor: '#ffffff', // white tooltip body text
                             callbacks: {
-                                label: (tooltipItem) => {
+                                label: (tooltipItem: any) => {
                                     return `${tooltipItem.dataset.label}: $${tooltipItem.raw.toFixed(2)}`;
                                 },
                             },
@@ -151,28 +151,26 @@ const MoneyTrends2 = ({ transactions }: Props) => {
                             },
                             grid: {
                                 display: false, // Remove vertical grid lines
-                                drawBorder: false, // Optional: remove axis line
                             },
                             title: {
                                 display: true,
                                 // text: 'Month-Year',
                                 font: {
                                     family: "'Poppins', sans-serif",
-                                    weight: '500',
+                                    weight: 500,
                                 },
                             }
                         },
                         y: {
                             grid: {
                                 display: false, // Remove horizontal grid lines
-                                drawBorder: false, // Optional: remove axis line
                             },
                             title: {
                                 display: true,
                                 text: 'Change in Amount ($)',
                                 font: {
                                     family: "'Poppins', sans-serif",
-                                    weight: '500',
+                                    weight: 500,
                                 },
                                 color: '#ffffff', // white title for y-axis
                             },

@@ -1,6 +1,6 @@
 // src/components/Dashboard/Sidebar.tsx
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, MoreVertical } from "lucide-react";
+import { ChevronDown, ChevronUp, MoreVertical, LayoutDashboard, Activity, BarChart3, Sparkles, Wallet } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -8,9 +8,6 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
-const defaultAccounts: object = [];
-const defaultLoans: object = [];
-const defaultInvestments: object = [];
 import {
     Dialog,
     DialogTrigger,
@@ -20,7 +17,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Activity, Calendar, BarChart3, Sparkles } from "lucide-react";
+
 const tabs = [
     { label: "Overview", icon: LayoutDashboard },
     { label: "Activity", icon: Activity },
@@ -201,67 +198,78 @@ const Sidebar = ({
                 })}
             </div>
 
+            {/* Financial Accounts Header */}
+            <div className="space-y-2">
+                <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                    <Wallet className="h-5 w-5" />
+                    Financial Accounts
+                </div>
+                <div className="h-px bg-border" />
+            </div>
+
             {/* Financial Sections */}
             <div className="space-y-4">
-                {financialSections.map(({ key, data }) => {
-                    const isOpen = expandedSections[key];
+                {financialSections
+                    .filter(({ data }) => data.length > 0)
+                    .map(({ key, data }) => {
+                        const isOpen = expandedSections[key];
 
-                    return (
-                        <div key={key}>
-                            <button
-                                onClick={() => toggleSection(key)}
-                                className="w-full flex items-center justify-between text-left text-sm font-semibold text-muted-foreground hover:text-foreground transition"
-                            >
-                                <div className="flex items-center gap-2">
-                                    {isOpen ? (
-                                        <ChevronUp className="h-4 w-4" />
-                                    ) : (
-                                        <ChevronDown className="h-4 w-4" />
-                                    )}
-                                    {key}
-                                </div>
-                            </button>
+                        return (
+                            <div key={key}>
+                                <button
+                                    onClick={() => toggleSection(key)}
+                                    className="w-full flex items-center justify-between text-left text-sm font-semibold text-muted-foreground hover:text-foreground transition"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {isOpen ? (
+                                            <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                            <ChevronDown className="h-4 w-4" />
+                                        )}
+                                        {key}
+                                    </div>
+                                </button>
 
-                            {isOpen && (
-                                <ul className="mt-2 space-y-2 pl-2">
-                                    {data.map((item) => (
-                                        <li
-                                            key={item.name}
-                                            className="flex items-center justify-between px-2 py-1 text-sm rounded-md hover:bg-muted/50 transition"
-                                        >
-                                            <div className="flex flex-col">
-                                                <span className="text-foreground font-medium">{item.name}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    ${Math.abs(item.balance).toLocaleString(undefined, {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2,
-                                                    })}
-                                                </span>
-                                            </div>
+                                {isOpen && (
+                                    <ul className="mt-2 space-y-2 pl-2">
+                                        {data.map((item) => (
+                                            <li
+                                                key={item.name}
+                                                className="flex items-center justify-between px-2 py-1 text-sm rounded-md hover:bg-muted/50 transition"
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="text-foreground font-medium">{item.name}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        ${Math.abs(item.balance).toLocaleString(undefined, {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        })}
+                                                    </span>
+                                                </div>
 
-                                            {/* Dropdown */}
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <button className="text-muted-foreground hover:text-foreground p-1">
-                                                        <MoreVertical className="w-4 h-4" />
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-background border border-border">
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleDelete(key, item.name)}
-                                                        className="cursor-pointer hover:bg-muted"
-                                                    >
-                                                        Remove
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    );
-                })}
+                                                {/* Dropdown */}
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button className="text-muted-foreground hover:text-foreground p-1">
+                                                            <MoreVertical className="w-4 h-4" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="bg-background border border-border">
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleDelete(key, item.name)}
+                                                            className="cursor-pointer hover:bg-muted"
+                                                        >
+                                                            Remove
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        );
+                    })}
             </div>
 
             {/* Add Account Button */}

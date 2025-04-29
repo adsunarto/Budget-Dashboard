@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Terminal } from "lucide-react"
 
-const AIExplanation = ({ response, handleCloseCard }) => {
+const AIExplanation = ({ response, handleCloseCard }: { response: Record<string, string>, handleCloseCard: any }) => {
     return (
         <div className="flex items-left justify-center m-4">
             <Alert className="relative flex justify-left p-6 pr-24 bg-[#282A39] shadow-2xl rounded-lg w-[80%]">

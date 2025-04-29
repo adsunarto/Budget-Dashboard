@@ -1,20 +1,6 @@
 import { useState, useMemo } from "react";
 import TransactionTable from "./TransactionTable";
-import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
-
-type Budget = {
-    category: string;
-    budgeted: number;
-    amountSpent: number;
-};
-
-type Transaction = {
-    id: number;
-    date: string;
-    tag: string;
-    name: string;
-    amount: number;
-};
+import { Transaction } from "@/lib/types";
 
 type Props = {
     transactions: Transaction[];
@@ -26,7 +12,7 @@ const Activity = ({ transactions: initialTransactions }: Props) => {
 
     // Parse transaction data into month and year fields for filtering
     const parsedTransactions = useMemo(() => {
-        return initialTransactions.map((tx) => {
+        return initialTransactions.map((tx: Transaction) => {
             const dateObj = new Date(tx.date);
             return {
                 ...tx,

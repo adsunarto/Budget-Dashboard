@@ -69,7 +69,7 @@ const InsightsPopup = ({ suggestions, onApprove, onDeny, onClose }: Props) => {
     }
   };
 
-  const suggestedBudget = calculateSuggestedBudget(currentSuggestion);
+  // const suggestedBudget = calculateSuggestedBudget(currentSuggestion);
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">

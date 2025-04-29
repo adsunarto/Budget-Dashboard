@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"; // optional, if you want cleaner className handling (tailwind merge helper)
+// import { cn } from "@/lib/utils"; // optional, if you want cleaner className handling (tailwind merge helper)
 
 type Transaction = {
   id: number;

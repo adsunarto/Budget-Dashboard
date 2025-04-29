@@ -9,9 +9,9 @@ import { Sparkles } from "lucide-react";
 import InsightsPopup from "@/components/Activity/InsightsPopup";
 import { getFromLocalStorage, setToLocalStorage } from "@/lib/storage";
 import Learn from "@/components/Learn/Learn";
+import { Transaction, Budget, Suggestion } from "@/lib/types";
 
-
-const transactions = [
+const transactions: Transaction[] = [
   { id: 1, date: "1/05/2025", tag: "Food", name: "Starbucks", amount: 13.50 },
   { id: 2, date: "1/06/2025", tag: "Transportation", name: "Uber", amount: 22.00 },
   { id: 3, date: "1/08/2025", tag: "Subscription", name: "Netflix Subscription", amount: 15.99 },
@@ -82,52 +82,19 @@ const transactions = [
   year: new Date(tx.date).getFullYear() // Store the year
 }));
 
-type Suggestion = {
-  id: number;
-  text: string;
-  category: string;
-  currentBudget: number;
-  suggestedBudget: number;
-};
-
 const tabs = [
   {
-    name: "Overview",
-    icon: "📊",
-    component: <Overview transactions={transactions} />,
+    name: "Overview", component: <Overview transactions={transactions} />,
   },
   {
-    name: "Activity",
-    icon: "📝",
-    component: <Activity transactions={transactions} />,
+    name: "Activity", component: <Activity transactions={transactions} />,
   },
   {
-    name: "Learn",
-    icon: "✨",
-    component: <Learn userData={{
-      netSavings: 1000, // Example value, should be calculated from transactions
-      categoriesOverBudget: 2, // Example value
-      budgeteerScore: 75, // Example value
-      budgets: [
-        { category: "Food", budgeted: 500, spent: 600 },
-        { category: "Transportation", budgeted: 200, spent: 150 },
-        { category: "Entertainment", budgeted: 300, spent: 350 }
-      ],
-      assets: {
-        accounts: [
-          { name: "Checking", balance: 5000 },
-          { name: "Savings", balance: 10000 }
-        ],
-        loans: [
-          { name: "Student Loan", balance: 20000 }
-        ],
-        investments: [
-          { name: "401k", balance: 50000 }
-        ]
-      }
-    }} />,
+    name: "Learn", component: <Learn />,
   },
-  { name: "Insights", component: <Insights  /> }
+  {
+    name: "Insights", component: <Insights transactions={transactions} budgets={getFromLocalStorage("budgets", [])} />
+  }
 ];
 
 export default function Dashboard() {
@@ -136,7 +103,6 @@ export default function Dashboard() {
     return savedTab;
   });
   const [showInsights, setShowInsights] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestionResponses, setSuggestionResponses] = useState<Suggestion[]>(
     getFromLocalStorage("suggestionResponses", [])
@@ -149,7 +115,7 @@ export default function Dashboard() {
     const currentYear = currentDate.getFullYear();
 
     const spending: Record<string, number> = {};
-    transactions.forEach((tx) => {
+    transactions.forEach((tx: Transaction) => {
       if (tx.month === currentMonth && tx.year === currentYear) {
         if (!spending[tx.tag]) {
           spending[tx.tag] = 0;
@@ -172,7 +138,7 @@ export default function Dashboard() {
       const currentSavings = currentMonthSpending["Income"] - Object.values(currentMonthSpending)
         .filter((_, i) => Object.keys(currentMonthSpending)[i] !== "Income")
         .reduce((a, b) => a + b, 0);
-      
+
       newSuggestions.push({
         id: 0,
         text: `To ${primaryGoal.toLowerCase()}, consider increasing your monthly savings by 10%. This would help you reach your goal sooner.`,
@@ -202,7 +168,7 @@ export default function Dashboard() {
       const currentSavings = currentMonthSpending["Income"] - Object.values(currentMonthSpending)
         .filter((_, i) => Object.keys(currentMonthSpending)[i] !== "Income")
         .reduce((a, b) => a + b, 0);
-      
+
       newSuggestions.push({
         id: 0,
         text: `To ${primaryGoal.toLowerCase()}, consider increasing your monthly savings by 10%. This would help you reach your down payment goal faster.`,
@@ -213,17 +179,17 @@ export default function Dashboard() {
     }
 
     // Add regular budget suggestions
-    Object.entries(currentMonthSpending).forEach(([category, spent], index) => {
+    Object.entries(currentMonthSpending).forEach(([category], index) => {
       if (category !== "Income") {
         const currentBudget = currentBudgets.find(b => b.category === category)?.budgeted || 0;
-        
+
         // Skip Rent/Utilities if it's already budgeted
         if (category === "Rent/Utilities" && currentBudget > 0) {
           return;
         }
-        
+
         const suggestedBudget = Math.round(currentBudget * 0.9); // 10% decrease from current budget
-        
+
         newSuggestions.push({
           id: index + 1,
           text: `Consider decreasing your ${category} budget by 10% to better accommodate your spending patterns.`,
@@ -241,7 +207,7 @@ export default function Dashboard() {
   const handleApproveSuggestion = (suggestion: Suggestion) => {
     // Update the budget
     const currentBudgets = getFromLocalStorage("budgets", []);
-    const updatedBudgets = currentBudgets.map(budget => 
+    const updatedBudgets = currentBudgets.map((budget: Budget) =>
       budget.category === suggestion.category
         ? { ...budget, budgeted: suggestion.suggestedBudget }
         : budget
@@ -256,7 +222,7 @@ export default function Dashboard() {
     // Force a re-render of the Overview component to update the budgeteer score
     const overviewComponent = tabs.find(tab => tab.name === "Overview")?.component;
     if (overviewComponent) {
-      tabs[tabs.findIndex(tab => tab.name === "Overview")].component = 
+      tabs[tabs.findIndex(tab => tab.name === "Overview")].component =
         <Overview transactions={transactions} />;
     }
   };
@@ -271,11 +237,6 @@ export default function Dashboard() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setToLocalStorage("activeTab", tab);
-    if (tab === "Learn") {
-      setShowChat(true);
-    } else {
-      setShowChat(false);
-    }
   };
 
   const CurrentComponent = tabs.find((tab) => tab.name === activeTab)?.component;
@@ -298,7 +259,7 @@ export default function Dashboard() {
           </h3>
 
           {/* Right: View Insights Button */}
-          <Button 
+          <Button
             onClick={generateSuggestions}
             className="flex items-center space-x-2 bg-white text-black border border-gray-300 hover:bg-gray-100"
           >

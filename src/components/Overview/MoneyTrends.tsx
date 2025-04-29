@@ -1,20 +1,10 @@
 import { Line } from "react-chartjs-2";
-import { format } from 'date-fns';
 import { useMemo, useState } from "react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
-
-import { Button } from "@/components/ui/button";
+import { Transaction } from "@/lib/types";
 
 // Register chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
-type Transaction = {
-    id: number;
-    date: string;
-    tag: string;
-    name: string;
-    amount: number;
-};
 
 type TimeRange = 'week' | 'month' | 'year';
 
@@ -22,12 +12,10 @@ type Props = {
     transactions: Transaction[];
 };
 
-const colorMap = new Map<string, string>();
-
 const getCurrentDateRange = (range: TimeRange) => {
     const now = new Date();
     const startDate = new Date(now);
-    
+
     switch (range) {
         case 'week':
             // Start from 7 days ago
@@ -52,7 +40,7 @@ const getCurrentDateRange = (range: TimeRange) => {
         case 'year':
             // startDate.setMonth(0, 1); // January 1st
             // const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
-            const monthCount = now.getMonth() + 1; // e.g. April = 3 + 1 = 4 months
+            // const monthCount = now.getMonth() + 1; // e.g. April = 3 + 1 = 4 months
 
             // return {
             //     start: startDate,
@@ -70,7 +58,7 @@ const getCurrentDateRange = (range: TimeRange) => {
                 increment: (date: Date) => new Date(date.setMonth(date.getMonth() + 1)),
                 format: (date: Date) => date.toLocaleDateString('en-US', { month: 'short' })
             };
-            }
+    }
 };
 
 const MoneyTrends = ({ transactions }: Props) => {
@@ -81,7 +69,7 @@ const MoneyTrends = ({ transactions }: Props) => {
     const chartData = useMemo(() => {
         const labels: string[] = [];
         const dailyTotals: number[] = new Array(dateRange.days).fill(0);
-        
+
         // Initialize date iterator and labels
         const currentDate = new Date(dateRange.start);
         for (let i = 0; i < dateRange.days; i++) {
@@ -90,13 +78,13 @@ const MoneyTrends = ({ transactions }: Props) => {
         }
 
         // Aggregate all transactions within date range
-        transactions.forEach(tx => {
+        transactions.forEach((tx: Transaction) => {
             const txDate = new Date(tx.date);
             if (txDate >= dateRange.start && txDate <= dateRange.end) {
-                const index = timeRange === 'year' 
-                    ? txDate.getMonth() 
+                const index = timeRange === 'year'
+                    ? txDate.getMonth()
                     : Math.floor((txDate.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-                
+
                 if (index >= 0 && index < dateRange.days) {
                     dailyTotals[index] += Math.abs(tx.amount);
                 }
@@ -107,7 +95,7 @@ const MoneyTrends = ({ transactions }: Props) => {
         if (timeRange === 'year') {
             const filteredLabels: string[] = [];
             const filteredData: number[] = [];
-            
+
             dailyTotals.forEach((total, index) => {
                 if (total > 0) {
                     filteredLabels.push(labels[index]);
@@ -139,7 +127,7 @@ const MoneyTrends = ({ transactions }: Props) => {
         };
     }, [transactions, timeRange, dateRange]);
 
-    const getButtonClass = (range: TimeRange) => 
+    const getButtonClass = (range: TimeRange) =>
         `w-full flex items-center gap-3 justify-center text-center px-4 py-2 rounded-lg text-sm font-medium transition ${timeRange === range ? "bg-primary/20 text-primary" : "hover:bg-muted text-muted-foreground"}`;
 
     return (
@@ -164,7 +152,7 @@ const MoneyTrends = ({ transactions }: Props) => {
                     Past Year
                 </button>
             </div>
-            
+
             <div className="flex-grow">
                 <Line
                     data={chartData}
@@ -189,7 +177,7 @@ const MoneyTrends = ({ transactions }: Props) => {
                             },
                             tooltip: {
                                 callbacks: {
-                                    label: (tooltipItem) => {
+                                    label: (tooltipItem: any) => {
                                         return `Total: $${tooltipItem.raw.toFixed(2)}`;
                                     },
                                 },
@@ -239,32 +227,5 @@ const MoneyTrends = ({ transactions }: Props) => {
         </div>
     );
 };
-
-
-const getColorForCategory = (category: string) => {
-    // If we already have a color for this category, return it
-    if (colorMap.has(category)) {
-      return colorMap.get(category)!;
-    }
-  
-    // Otherwise generate a new color and store it
-    const randomShades = [
-      '#1A3E72', '#2D5C9E', '#4A89DC', '#1565C0', '#2196F3',
-      '#1B5E20', '#388E3C', '#66BB6A', '#00897B', '#43A047',
-      '#FFD700', '#FFC400', '#FFA000', '#FFF176', '#FDD835',
-      '#6A1B9A', '#4527A0', '#7E57C2', '#9575CD', '#00897B',
-      '#26A69A', '#4DB6AC', '#80CBC4'
-    ];
-    
-    // Use the category's hash to pick a consistent color
-    const hash = Array.from(category).reduce(
-      (hash, char) => char.charCodeAt(0) + ((hash << 5) - hash),
-      0
-    );
-    const color = randomShades[Math.abs(hash) % randomShades.length];
-    
-    colorMap.set(category, color);
-    return color;
-  };
 
 export default MoneyTrends;

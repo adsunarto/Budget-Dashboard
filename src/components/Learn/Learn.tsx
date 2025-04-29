@@ -1,33 +1,29 @@
 import { useEffect, useState } from "react";
 
-interface UserData {
-    netSavings: number;
-    categoriesOverBudget: number;
-    budgeteerScore: number;
-    budgets: Array<{
-        category: string;
-        budgeted: number;
-        spent: number;
-    }>;
-    assets: {
-        accounts: Array<{
-            name: string;
-            balance: number;
-        }>;
-        loans: Array<{
-            name: string;
-            balance: number;
-        }>;
-        investments: Array<{
-            name: string;
-            balance: number;
-        }>;
-    };
-}
-
-interface LearnProps {
-    userData: UserData;
-}
+// interface UserData {
+//     netSavings: number;
+//     categoriesOverBudget: number;
+//     budgeteerScore: number;
+//     budgets: Array<{
+//         category: string;
+//         budgeted: number;
+//         spent: number;
+//     }>;
+//     assets: {
+//         accounts: Array<{
+//             name: string;
+//             balance: number;
+//         }>;
+//         loans: Array<{
+//             name: string;
+//             balance: number;
+//         }>;
+//         investments: Array<{
+//             name: string;
+//             balance: number;
+//         }>;
+//     };
+// }
 
 interface QuizQuestion {
     question: string;
@@ -58,7 +54,7 @@ interface TopicHeader {
     description: string;
 }
 
-const Learn = ({ userData }: LearnProps) => {
+const Learn = () => {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [learningContent, setLearningContent] = useState<LearningContent>({
@@ -71,7 +67,6 @@ const Learn = ({ userData }: LearnProps) => {
     const [generationProgress, setGenerationProgress] = useState<string>("");
     const [currentStep, setCurrentStep] = useState<number>(0);
     const [title, setTitle] = useState<string>("");
-    const [topicHeaders, setTopicHeaders] = useState<TopicHeader[]>([]);
     const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>([]);
 
     useEffect(() => {
@@ -151,7 +146,6 @@ const Learn = ({ userData }: LearnProps) => {
 
                 const jsonStr = responseText.slice(jsonStart, jsonEnd + 1);
                 const headers = JSON.parse(jsonStr);
-                setTopicHeaders(headers);
                 const steps = createGenerationSteps(headers);
                 setGenerationSteps(steps);
                 return headers;
@@ -401,7 +395,7 @@ const Learn = ({ userData }: LearnProps) => {
                         <span>{generationProgress}</span>
                     </div>
                     <div className="mt-2 flex gap-2">
-                        {generationSteps.map((step, index) => (
+                        {generationSteps.map((_, index) => (
                             <div
                                 key={index}
                                 className={`h-1 flex-1 rounded ${index < currentStep
