@@ -19,8 +19,9 @@ cd budgeting-app
 npm install
 ```
 
-3. Run the development server
+3. Build then run the development server
 ```
+npm run build
 npm run dev
 ```
 
