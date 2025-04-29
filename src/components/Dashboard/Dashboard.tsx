@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import Overview from "@/components/Overview/Overview";
 import Activity from "@/components/Activity/Activity";
-import Insights from "@/components/Plan/Plan";
+import Insights from "@/components/Insights/Insights";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import InsightsPopup from "@/components/Activity/InsightsPopup";
@@ -127,11 +127,14 @@ const tabs = [
       }
     }} />,
   },
-  { name: "Insights", component: <Insights /> }
+  { name: "Insights", component: <Insights  /> }
 ];
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = getFromLocalStorage("activeTab", "Overview");
+    return savedTab;
+  });
   const [showInsights, setShowInsights] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -267,6 +270,7 @@ export default function Dashboard() {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    setToLocalStorage("activeTab", tab);
     if (tab === "Learn") {
       setShowChat(true);
     } else {

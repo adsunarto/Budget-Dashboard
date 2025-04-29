@@ -65,7 +65,7 @@
 }
 
 /* Font configuration with local fallback */
-@font-face {
+/* @font-face {
   font-family: 'Poppins';
   src: local('Poppins'),
        url('https://fonts.gstatic.com/s/poppins/v23/pxiByp8kv8JHgFVrLEj6Z1xlFd2JQEk.woff2') format('woff2');
@@ -99,7 +99,7 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-}
+} */
 
 a {
   font-weight: 500;
